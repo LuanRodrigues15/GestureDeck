@@ -130,13 +130,13 @@ class JanelaOverlay(QWidget):
         return caminho
 
     def _ponteiro(self, p, s, w, h):
-        if s.ponteiro is None or s.gesto == Gesto.ABERTA:
+        if s.ponteiro is None:
             return
         x, y = s.ponteiro[0] * w, s.ponteiro[1] * h
         holofote_grande = s.gesto == Gesto.LASER and s.modo_holofote
         if not holofote_grande:
             self._cursor(p, s, x, y, self.cfg.cursor_raio * h)
-        if s.gesto == Gesto.NENHUM:
+        if s.gesto in (Gesto.NENHUM, Gesto.ABERTA):
             return
         if s.gesto == Gesto.DESENHAR:
             if s.ferramenta == "borracha":
@@ -292,7 +292,11 @@ class JanelaOverlay(QWidget):
                      Gesto.DESENHAR: "desenhando", Gesto.ABERTA: "mao aberta"}
             if s.gesto == Gesto.LASER and s.modo_holofote:
                 nomes[Gesto.LASER] = "holofote"
-            texto, cor = f"Trava ativa  |  {nomes[s.gesto]}", QColor(52, 199, 89)
+            if s.ponteiro is None:
+                texto = "Trava ativa  |  mostre a mao direita"
+            else:
+                texto = f"Trava ativa  |  {nomes[s.gesto]}"
+            cor = QColor(52, 199, 89)
         else:
             texto, cor = ("Trava inativa" if s.maos else "Sem maos"), QColor(142, 142, 147)
         partes = [texto, f"{s.fps:.0f} FPS"]

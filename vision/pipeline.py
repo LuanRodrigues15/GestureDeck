@@ -2,6 +2,7 @@
 import threading
 import time
 import traceback
+from datetime import datetime
 
 import cv2
 
@@ -14,8 +15,10 @@ from .rastreador import Rastreador
 
 
 class ThreadVisao(threading.Thread):
-    def __init__(self, cfg, raiz, sessao, metricas, teclas, previa: bool = False):
+    def __init__(self, cfg, raiz, sessao, metricas, teclas, previa: bool = False,
+                 depurar: bool = False):
         super().__init__(name="visao", daemon=True)
+        self.depurar = depurar
         self.cfg = cfg
         self.raiz = raiz
         self.sessao = sessao
@@ -55,7 +58,24 @@ class ThreadVisao(threading.Thread):
             if camera is not None:
                 camera.fechar()
 
+    def _abrir_log(self):
+        if not self.depurar:
+            return None
+        pasta = self.raiz / self.cfg.relatorio.pasta
+        pasta.mkdir(parents=True, exist_ok=True)
+        caminho = pasta / f"depuracao_{datetime.now():%Y%m%d_%H%M%S}.log"
+        print(f"Depuracao gravada em {caminho}")
+        return open(caminho, "w", encoding="utf-8")
+
     def _laco(self, camera: Camera, rastreador: Rastreador) -> None:
+        log = self._abrir_log()
+        try:
+            self._processar(camera, rastreador, log)
+        finally:
+            if log is not None:
+                log.close()
+
+    def _processar(self, camera: Camera, rastreador: Rastreador, log) -> None:
         cfg = self.cfg
         x0, y0, x1, y1 = cfg.roi
         escala = cfg.escala_processamento
@@ -64,6 +84,8 @@ class ThreadVisao(threading.Thread):
         ultimo_t = time.monotonic()
         fps = 0.0
         proximo_fps = 0.0
+        proximo_log = 0.0
+        inicio_log = time.monotonic()
         while not self._parar.is_set():
             if camera.falhou:
                 raise RuntimeError("A camera parou de enviar imagens.")
@@ -92,6 +114,16 @@ class ThreadVisao(threading.Thread):
             if q.slide is not None:
                 self.teclas.enviar(q.slide)
             self.sessao.aplicar(q)
+
+            if log is not None and agora >= proximo_log:
+                proximo_log = agora + 0.5
+                log.write(
+                    f"{agora - inicio_log:6.1f}s maos={len(maos)} trava={int(q.trava)} "
+                    f"gesto={q.gesto.value} cursor={'sim' if q.ponteiro else 'nao'} "
+                    f"fps={fps:.0f} brilho={frame.mean():.0f} | "
+                    + " | ".join(interp.depuracao[1:]) + "\n"
+                )
+                log.flush()
 
             fim = time.perf_counter()
             self.metricas.registrar_quadro(

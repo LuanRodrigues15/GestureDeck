@@ -19,6 +19,8 @@ def ler_argumentos():
     p.add_argument("--monitor", type=int, help="monitor do overlay (padrao: config.json)")
     p.add_argument("--previa", action="store_true",
                    help="abre uma janela com a camera e os pontos das maos")
+    p.add_argument("--depurar", action="store_true",
+                   help="grava em relatorios/ um log do que a camera e os gestos estao vendo")
     p.add_argument("--simular", action="store_true",
                    help="usa gestos simulados em vez da camera (teste do overlay)")
     p.add_argument("--config", help="caminho de um config.json alternativo")
@@ -56,7 +58,7 @@ def main() -> int:
         trabalho = Simulador(sessao, metricas, ao_trocar_slide=teclas.enviar)
     else:
         trabalho = ThreadVisao(cfg, RAIZ, sessao, metricas, teclas,
-                               previa=args.previa or args.sem_overlay)
+                               previa=args.previa or args.sem_overlay, depurar=args.depurar)
 
     janelas = []
     if not args.sem_overlay:

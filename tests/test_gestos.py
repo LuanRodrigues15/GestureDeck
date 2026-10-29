@@ -142,10 +142,16 @@ class TestGestosComTrava(unittest.TestCase):
         qs = rodar(interp, lambda i, n: [ms.punho()], t0=2.0, duracao=0.6)
         self.assertIsNone(qs[-1].ponteiro)
 
-    def test_mao_aberta_nao_mostra_ponteiro(self):
+    def test_mao_aberta_mantem_o_cursor(self):
         interp = novo()
         qs = com_trava(interp, lambda i, n: ms.aberta(), 1.0)
         self.assertEqual(qs[-1].gesto, Gesto.ABERTA)
+        self.assertIsNotNone(qs[-1].ponteiro)
+
+    def test_so_a_mao_da_trava_nao_mostra_cursor(self):
+        interp = novo()
+        qs = rodar(interp, lambda i, n: [ms.punho()], duracao=1.0)
+        self.assertTrue(qs[-1].trava)
         self.assertIsNone(qs[-1].ponteiro)
 
 

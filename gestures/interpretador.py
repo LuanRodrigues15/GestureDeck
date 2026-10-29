@@ -117,8 +117,8 @@ class Interpretador:
             # o cursor acompanha a mao sempre que ela esta visivel, para o
             # apresentador saber onde vai apontar ou comecar a desenhar
             visivel = mao_acao is not None or t - self._t_acao_visto < g.perda_tolerancia_s
-            if gesto != Gesto.ABERTA and visivel:
-                if mao_acao is not None and bruto != Gesto.ABERTA:
+            if visivel:
+                if mao_acao is not None:
                     self._ponteiro = self._mapear(mao_acao, t)
             else:
                 self._ponteiro = None
@@ -132,7 +132,7 @@ class Interpretador:
             t=t,
             trava=trava,
             gesto=gesto,
-            ponteiro=self._ponteiro if trava and gesto != Gesto.ABERTA else None,
+            ponteiro=self._ponteiro if trava else None,
             slide=slide,
             maos=len(maos),
         )
@@ -165,10 +165,12 @@ class Interpretador:
         linhas = [f"trava: {'ATIVA' if trava else 'inativa'}   gesto: {gesto.value}"]
         if mt is not None:
             linhas.append(
-                f"mao trava: fechada={mt.fechada} altura={mt.palma[1]:.2f} dedos={mt.esticados}"
+                f"mao trava: x={mt.palma[0]:.2f} y={mt.palma[1]:.2f} fechada={mt.fechada} "
+                f"dedos={mt.esticados}"
             )
         if ma is not None:
             linhas.append(
-                f"mao acao: dedos={ma.esticados} pinca={ma.pinca:.2f} tam={ma.tamanho:.3f}"
+                f"mao acao: x={ma.palma[0]:.2f} y={ma.palma[1]:.2f} dedos={ma.esticados} "
+                f"pinca={ma.pinca:.2f} tam={ma.tamanho:.3f}"
             )
         return linhas

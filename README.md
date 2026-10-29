@@ -18,7 +18,7 @@ A câmera acompanha as duas mãos em tempo real com o MediaPipe. O laser e os de
 | Slide seguinte | Mão direita aberta, deslizando para a esquerda |
 | Slide anterior | Mão direita aberta, deslizando para a direita |
 
-Com a trava ativa, um holofote pequeno acompanha a mão direita como o cursor de um mouse, mostrando onde o laser vai apontar e onde o traço vai começar. Ele ganha a cor da caneta quando você desenha e some quando a mão está aberta para deslizar.
+Com a trava ativa, um holofote pequeno acompanha a mão direita como o cursor de um mouse, mostrando onde o laser vai apontar e onde o traço vai começar. Ele ganha a cor da caneta quando você desenha. Se a trava estiver ativa mas a mão direita não aparecer na câmera, o indicador na tela avisa.
 
 Enquanto a trava está ativa, uma barra na borda da tela permite escolher a cor, usar a borracha, desfazer e limpar o desenho, bastando manter o laser parado sobre o item por cerca de 1 segundo. Teclas: **F1** cartão de ajuda, **F2** laser ou holofote, **F9** pausar, **F10** sair.
 
@@ -57,6 +57,7 @@ Opções:
 |---|---|
 | `--ensaio` | mostra a ação na tela sem enviar teclas |
 | `--previa` | abre uma janela com a câmera, os pontos das mãos e os valores usados no reconhecimento |
+| `--depurar` | grava em `relatorios/` um log do que a câmera vê (mãos, dedos, trava, cursor) a cada 0,5 s |
 | `--sem-overlay` | não cria a janela transparente (abre só a prévia) |
 | `--camera N` | escolhe a câmera |
 | `--monitor N` | escolhe o monitor do overlay |
