@@ -3,6 +3,7 @@
 Todas as distancias sao divididas pelo tamanho da mao, entao os limiares nao
 dependem da distancia entre a pessoa e a camera nem da direcao da mao.
 """
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -60,10 +61,28 @@ class Mao:
     tamanho: float
     esticados: tuple          # (indicador, medio, anelar, minimo)
     pinca: float              # distancia polegar-indicador / tamanho
+    eixo: tuple               # direcao do pulso para as pontas do indicador e do medio
 
     @property
     def fechada(self) -> bool:
         return not any(self.esticados)
+
+    @property
+    def dois_dedos(self) -> bool:
+        return self.esticados == (True, True, False, False)
+
+    def direcao_vertical(self, angulo_max_graus: float) -> int:
+        """+1 se os dedos apontam para cima, -1 para baixo, 0 se estao de lado.
+
+        `angulo_max_graus` e o desvio aceito em relacao a vertical.
+        """
+        corte = math.cos(math.radians(angulo_max_graus))
+        vy = self.eixo[1]            # o y da imagem cresce para baixo
+        if -vy >= corte:
+            return 1
+        if vy >= corte:
+            return -1
+        return 0
 
     @property
     def laser(self) -> bool:
@@ -78,6 +97,8 @@ def montar_mao(pontos: np.ndarray, aspecto: float, limiar: float) -> Mao:
     p = corrigir_aspecto(pontos, aspecto)
     tam = tamanho_mao(p)
     esticados = tuple(dedo_esticado(p, d, tam, limiar) for d in DEDOS)
+    vetor = (p[8] + p[12]) / 2.0 - p[0]
+    norma = max(float(np.hypot(vetor[0], vetor[1])), 1e-9)
     return Mao(
         pontos=np.asarray(pontos),
         palma=centro_palma(np.asarray(pontos)[:, :2]),
@@ -85,4 +106,5 @@ def montar_mao(pontos: np.ndarray, aspecto: float, limiar: float) -> Mao:
         tamanho=tam,
         esticados=esticados,
         pinca=razao_pinca(p, tam),
+        eixo=(float(vetor[0]) / norma, float(vetor[1]) / norma),
     )

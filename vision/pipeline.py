@@ -114,7 +114,7 @@ class ThreadVisao(threading.Thread):
                 self.teclas.enviar(q.slide)
             self.sessao.aplicar(q)
 
-            if log is not None:   # uma linha por quadro, para analisar deslizes rapidos
+            if log is not None:   # uma linha por quadro
                 log.write(
                     f"{agora - inicio_log:7.2f}s maos={len(maos)} trava={int(q.trava)} "
                     f"gesto={q.gesto.value} cursor={'sim' if q.ponteiro else 'nao'} "

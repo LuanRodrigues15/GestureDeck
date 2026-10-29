@@ -39,6 +39,26 @@ def mao(esticados=(False, False, False, False), pinca=False, centro=(0.6, 0.5),
     return np.stack([x, y, np.zeros(21)], axis=1)
 
 
+def girar(pontos: np.ndarray, graus: float, aspecto: float = 16 / 9) -> np.ndarray:
+    """Gira a mao em torno do pulso (sentido horario na imagem, como o relogio)."""
+    p = pontos.copy()
+    p[:, 0] *= aspecto
+    origem = p[0, :2].copy()
+    a = np.radians(graus)
+    c, s = np.cos(a), np.sin(a)
+    rel = p[:, :2] - origem
+    # o y da imagem cresce para baixo, entao esta rotacao e horaria na tela
+    p[:, 0] = origem[0] + rel[:, 0] * c - rel[:, 1] * s
+    p[:, 1] = origem[1] + rel[:, 0] * s + rel[:, 1] * c
+    p[:, 0] /= aspecto
+    return p
+
+
+def dois_dedos(centro=(0.7, 0.4), graus=0.0, **kw):
+    """Indicador e medio esticados; `graus` gira a mao (0 = para cima, 180 = para baixo)."""
+    return girar(mao((True, True, False, False), centro=centro, **kw), graus)
+
+
 def punho(centro=(0.3, 0.5), **kw):
     return mao((False, False, False, False), centro=centro, **kw)
 

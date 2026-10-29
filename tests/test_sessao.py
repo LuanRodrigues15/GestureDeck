@@ -50,7 +50,7 @@ class TestTracos(unittest.TestCase):
     def test_troca_de_slide_limpa_os_tracos(self):
         s = nova_sessao()
         desenhar(s, LINHA)
-        s.aplicar(q(2.0, Gesto.ABERTA, slide=Slide.PROXIMO))
+        s.aplicar(q(2.0, Gesto.SLIDE_PROXIMO, slide=Slide.PROXIMO))
         self.assertEqual(len(s.tracos), 0)
 
     def test_nao_desenha_sobre_a_barra(self):

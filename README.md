@@ -15,8 +15,8 @@ A câmera acompanha as duas mãos em tempo real com o MediaPipe. O laser e os de
 | Habilitar os comandos (trava) | Mão esquerda fechada e levantada, mantida |
 | Laser | Mão direita com o indicador esticado, como o número 1 |
 | Desenhar | Pinça (polegar e indicador) mantida, movendo a mão |
-| Slide seguinte | Mão direita aberta, deslizando para a esquerda |
-| Slide anterior | Mão direita aberta, deslizando para a direita |
+| Slide seguinte | Mão direita com indicador e médio esticados, apontando para cima, mantida por cerca de 0,35 s |
+| Slide anterior | Mão direita com indicador e médio esticados, apontando para baixo, mantida por cerca de 0,35 s |
 
 Com a trava ativa, um holofote pequeno acompanha a mão direita como o cursor de um mouse, mostrando onde o laser vai apontar e onde o traço vai começar. Ele ganha a cor da caneta quando você desenha. Se a trava estiver ativa mas a mão direita não aparecer na câmera, o indicador na tela avisa.
 
@@ -32,7 +32,7 @@ Python 3.10, OpenCV, MediaPipe (HandLandmarker, 21 pontos por mão), PySide6 (ja
 - **Dedo esticado sem depender da direção:** a ponta precisa estar mais longe do pulso que a articulação do meio, com as distâncias divididas pelo tamanho da mão. Assim os limiares valem perto e longe da câmera.
 - **Pinça:** distância polegar-indicador normalizada, com histerese (fecha em 0,30 e abre em 0,50) e debounce de cerca de 0,3 s.
 - **Ponteiro relativo:** a posição da mão vira posição na tela por uma zona ativa, com suavização exponencial adaptativa (filtro 1 euro). A âncora é a base do indicador, não a ponta, porque a ponta se mexe na pinça.
-- **Deslize:** palma aberta que percorre cerca de 2 tamanhos de mão em até 0,7 s. Cada mão é acompanhada pela posição anterior, então o deslize funciona mesmo quando a mão direita cruza a esquerda. Depois do comando há 1 s de espera para o retorno da mão não virar o comando contrário.
+- **Troca de slide:** gesto parado, sem movimento rápido (que borra em sala escura) e sem a mão passar na frente da trava. Indicador e médio esticados, com o eixo do pulso às pontas a até 40 graus da vertical, mantidos por 0,35 s. Um anel ao redor do cursor mostra o tempo restante. O comando dispara uma vez; para repetir é preciso sair do gesto e voltar, com no mínimo 1 s entre as trocas. Cada mão é acompanhada pela posição anterior, então os papéis não se invertem se elas se cruzarem.
 - **Janela transparente:** sem borda, sempre no topo, cliques atravessam e o foco continua no PowerPoint. A visão roda em uma thread e o desenho em outra.
 
 ## Como executar
@@ -63,7 +63,7 @@ Opções:
 | `--monitor N` | escolhe o monitor do overlay |
 | `--simular` | usa gestos simulados no lugar da câmera, para testar o overlay |
 
-Os parâmetros (limites, tempos, cores, zona ativa, sentido do deslize) ficam no `config.json`. Ao encerrar com F10, um relatório em JSON (slides trocados, traços, gestos reconhecidos, FPS e latência) é salvo na pasta `relatorios/`.
+Os parâmetros (limites, tempos, cores, zona ativa, tempo e inversão do gesto de slide) ficam no `config.json`. Ao encerrar com F10, um relatório em JSON (slides trocados, traços, gestos reconhecidos, FPS e latência) é salvo na pasta `relatorios/`.
 
 ### Ajuste na primeira vez
 
@@ -78,7 +78,7 @@ Os parâmetros (limites, tempos, cores, zona ativa, sentido do deslize) ficam no
 python -m unittest discover -s tests
 ```
 
-Os testes usam mãos sintéticas, sem câmera, e cobrem a trava, o laser, a pinça, o deslize, a barra e o desenho.
+Os testes usam mãos sintéticas, sem câmera, e cobrem a trava, o laser, a pinça, a troca de slide, a barra e o desenho.
 
 ## Referências
 

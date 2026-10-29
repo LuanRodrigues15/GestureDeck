@@ -46,6 +46,7 @@ class Instantaneo:
     barra_itens: list
     cor_indice: int
     versao: int
+    segurando: tuple | None = None
 
 
 class Sessao:
@@ -264,4 +265,5 @@ class Sessao:
                 barra_itens=list(self._itens),
                 cor_indice=self.cor_indice,
                 versao=self._versao,
+                segurando=q.segurando if not self.pausado else None,
             )

@@ -1,11 +1,9 @@
 """Transforma as maos detectadas em um Quadro (trava, gesto, ponteiro, slide)."""
-from .deslize import DetectorDeslize
-from .eventos import Gesto, Quadro, Slide
+from .eventos import GESTOS_DE_SLIDE, Gesto, Quadro, Slide
 from .filtros import Estabilizador, FiltroUmEuro
 from .geometria import Mao, montar_mao
 
 _EXPIRA_HISTORICO_S = 1.5
-_PAUSA_ABERTA_S = 0.2
 
 
 def _dist(a, b) -> float:
@@ -25,17 +23,19 @@ class Interpretador:
         self._pinca = False
         self._fx = FiltroUmEuro(m.filtro_min_cutoff, m.filtro_beta, m.filtro_d_cutoff)
         self._fy = FiltroUmEuro(m.filtro_min_cutoff, m.filtro_beta, m.filtro_d_cutoff)
-        self._deslize = DetectorDeslize(cfg.deslize)
         self._p_trava = None
         self._p_acao = None
         self._t_historico = -1e9
         self._t_acao_visto = -1e9
-        self._t_aberta_visto = -1e9
+        self._slide_livre_em = -1e9
+        self._gesto_anterior = Gesto.NENHUM
         self._ponteiro: tuple[float, float] | None = None
         self.depuracao: list[str] = []
 
     def _atraso_postura(self, anterior: Gesto, novo: Gesto) -> float:
         g = self.cfg.gestos
+        if novo in GESTOS_DE_SLIDE:
+            return self.cfg.slide.segurar_s
         if novo == Gesto.DESENHAR:
             return g.pinca_ativar_s
         if anterior == Gesto.DESENHAR:
@@ -47,8 +47,8 @@ class Interpretador:
         """Escolhe a mao da trava e a mao de acao.
 
         Sem trava ativa, a mais a esquerda da imagem espelhada e a trava. Com a
-        trava ativa, cada mao e acompanhada pela posicao anterior: assim, quando
-        a mao direita cruza a esquerda no deslize, os papeis nao se invertem.
+        trava ativa, cada mao e acompanhada pela posicao anterior: assim, se as
+        maos se cruzarem, os papeis nao se invertem.
         """
         if t - self._t_historico > _EXPIRA_HISTORICO_S:
             self._p_trava = self._p_acao = None
@@ -79,6 +79,16 @@ class Interpretador:
 
     def _postura_bruta(self, m: Mao) -> Gesto:
         g = self.cfg.gestos
+        if m.dois_dedos and not self._pinca:
+            # indicador e medio esticados: o indicador nao pode estar fazendo pinca
+            direcao = m.direcao_vertical(self.cfg.slide.angulo_max)
+            if self.cfg.slide.inverter:
+                direcao = -direcao
+            if direcao > 0:
+                return Gesto.SLIDE_PROXIMO
+            if direcao < 0:
+                return Gesto.SLIDE_ANTERIOR
+            return Gesto.NENHUM
         if self._pinca:
             if m.pinca > g.pinca_abrir:
                 self._pinca = False
@@ -88,8 +98,6 @@ class Interpretador:
             return Gesto.DESENHAR
         if m.laser:
             return Gesto.LASER
-        if m.aberta:
-            return Gesto.ABERTA
         return Gesto.NENHUM
 
     def _mapear(self, m: Mao, t: float) -> tuple[float, float]:
@@ -141,7 +149,16 @@ class Interpretador:
                 self._fx.reiniciar()
                 self._fy.reiniciar()
 
-            slide = self._tratar_deslize(mao_acao, t)
+            # a troca de slide dispara uma vez, quando o gesto de dois dedos
+            # termina de ser segurado; para repetir e preciso sair e voltar ao gesto
+            if (
+                gesto in GESTOS_DE_SLIDE
+                and gesto != self._gesto_anterior
+                and t >= self._slide_livre_em
+            ):
+                slide = Slide.PROXIMO if gesto == Gesto.SLIDE_PROXIMO else Slide.ANTERIOR
+                self._slide_livre_em = t + self.cfg.slide.cooldown_s
+            self._gesto_anterior = gesto
 
         self.depuracao = self._texto_depuracao(mao_trava, mao_acao, trava, gesto)
         return Quadro(
@@ -151,31 +168,24 @@ class Interpretador:
             ponteiro=self._ponteiro if trava else None,
             slide=slide,
             maos=len(maos),
+            segurando=self._segurando(t) if trava else None,
         )
+
+    def _segurando(self, t: float):
+        """Gesto de slide que esta sendo confirmado e quanto falta (0..1)."""
+        candidato = self._postura.candidato
+        if candidato in GESTOS_DE_SLIDE and candidato != self._postura.valor:
+            decorrido = t - self._postura.desde
+            return candidato, max(0.0, min(1.0, decorrido / self.cfg.slide.segurar_s))
+        return None
 
     def _resetar_acao(self, t: float) -> None:
         self._postura.forcar(Gesto.NENHUM, t)
         self._pinca = False
         self._ponteiro = None
+        self._gesto_anterior = Gesto.NENHUM
         self._fx.reiniciar()
         self._fy.reiniciar()
-        self._deslize.reiniciar()
-
-    def _tratar_deslize(self, mao_acao: Mao | None, t: float) -> Slide | None:
-        if mao_acao is not None and mao_acao.aberta and not self._pinca:
-            self._t_aberta_visto = t
-            direcao = self._deslize.atualizar(
-                t, mao_acao.palma_c[0], mao_acao.palma_c[1], mao_acao.tamanho
-            )
-            if direcao is None:
-                return None
-            avanca = direcao < 0
-            if self.cfg.deslize.inverter:
-                avanca = not avanca
-            return Slide.PROXIMO if avanca else Slide.ANTERIOR
-        if t - self._t_aberta_visto > _PAUSA_ABERTA_S:
-            self._deslize.reiniciar()
-        return None
 
     def _texto_depuracao(self, mt, ma, trava, gesto) -> list[str]:
         linhas = [f"trava: {'ATIVA' if trava else 'inativa'}   gesto: {gesto.value}"]
@@ -187,8 +197,7 @@ class Interpretador:
         if ma is not None:
             linhas.append(
                 f"mao acao: x={ma.palma[0]:.2f} y={ma.palma[1]:.2f} dedos={ma.esticados} "
-                f"pinca={ma.pinca:.2f} tam={ma.tamanho:.3f}"
+                f"pinca={ma.pinca:.2f} tam={ma.tamanho:.3f} "
+                f"eixo=({ma.eixo[0]:.2f},{ma.eixo[1]:.2f})"
             )
-            if self._deslize.info:
-                linhas.append(self._deslize.info)
         return linhas

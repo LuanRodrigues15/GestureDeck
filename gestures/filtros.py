@@ -15,6 +15,15 @@ class Estabilizador:
         self._candidato = inicial
         self._desde = 0.0
 
+    @property
+    def candidato(self):
+        """Valor que esta esperando o tempo de atraso para ser adotado."""
+        return self._candidato
+
+    @property
+    def desde(self) -> float:
+        return self._desde
+
     def atualizar(self, bruto, t: float):
         if bruto == self.valor:
             self._candidato = bruto

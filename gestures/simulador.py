@@ -41,7 +41,7 @@ class Simulador(threading.Thread):
                 ponteiro = (item.cx / self.sessao._tela[0], item.cy / self.sessao._tela[1])
                 gesto = Gesto.LASER
             else:
-                ponteiro, gesto = None, Gesto.ABERTA
+                ponteiro, gesto = None, Gesto.SLIDE_PROXIMO
                 if fase >= 13.0 and not slide_enviado:
                     slide, slide_enviado = Slide.PROXIMO, True
             if fase < 1.0:

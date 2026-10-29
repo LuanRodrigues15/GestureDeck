@@ -11,7 +11,11 @@ class Gesto(Enum):
     NENHUM = "nenhum"
     LASER = "laser"
     DESENHAR = "desenhar"
-    ABERTA = "mao aberta"
+    SLIDE_PROXIMO = "slide seguinte"      # dois dedos para cima
+    SLIDE_ANTERIOR = "slide anterior"     # dois dedos para baixo
+
+
+GESTOS_DE_SLIDE = (Gesto.SLIDE_PROXIMO, Gesto.SLIDE_ANTERIOR)
 
 
 class Slide(Enum):
@@ -27,3 +31,4 @@ class Quadro:
     ponteiro: tuple[float, float] | None = None  # posicao na tela, 0..1
     slide: Slide | None = None                 # troca de slide neste quadro
     maos: int = 0                              # maos visiveis
+    segurando: tuple[Gesto, float] | None = None  # gesto de slide em confirmacao, 0..1

@@ -24,7 +24,8 @@ _AJUDA = [
     "Mao esquerda fechada e levantada: habilita",
     "Indicador esticado: laser",
     "Pinca (polegar e indicador): desenhar",
-    "Mao direita aberta deslizando: slide",
+    "Dois dedos para cima: slide seguinte",
+    "Dois dedos para baixo: slide anterior",
     "F1 ajuda   F2 laser/holofote   F9 pausa   F10 sair",
 ]
 _FONTE = "Segoe UI"
@@ -136,7 +137,9 @@ class JanelaOverlay(QWidget):
         holofote_grande = s.gesto == Gesto.LASER and s.modo_holofote
         if not holofote_grande:
             self._cursor(p, s, x, y, self.cfg.cursor_raio * h)
-        if s.gesto in (Gesto.NENHUM, Gesto.ABERTA):
+        if s.segurando is not None:
+            self._anel_de_slide(p, x, y, self.cfg.cursor_raio * h * 0.95, s.segurando[1])
+        if s.gesto in (Gesto.NENHUM, Gesto.SLIDE_PROXIMO, Gesto.SLIDE_ANTERIOR):
             return
         if s.gesto == Gesto.DESENHAR:
             if s.ferramenta == "borracha":
@@ -179,6 +182,16 @@ class JanelaOverlay(QWidget):
         p.drawEllipse(QPointF(x, y), raio * 0.55, raio * 0.55)
         p.setPen(QPen(QColor(255, 255, 255, 235), 2.2))
         p.drawEllipse(QPointF(x, y), raio * 0.55, raio * 0.55)
+
+    @staticmethod
+    def _anel_de_slide(p, x, y, raio, fracao):
+        """Anel que se completa enquanto o gesto de dois dedos e segurado."""
+        caixa = QRectF(x - raio, y - raio, raio * 2, raio * 2)
+        p.setBrush(Qt.NoBrush)
+        p.setPen(QPen(QColor(0, 0, 0, 120), 9, Qt.SolidLine, Qt.RoundCap))
+        p.drawArc(caixa, 90 * 16, int(-360 * 16 * fracao))
+        p.setPen(QPen(QColor(255, 255, 255, 250), 5.5, Qt.SolidLine, Qt.RoundCap))
+        p.drawArc(caixa, 90 * 16, int(-360 * 16 * fracao))
 
     @staticmethod
     def _sombra(p, x, y, raio, alfa=70):
@@ -289,11 +302,14 @@ class JanelaOverlay(QWidget):
             texto, cor = "PAUSADO (F9 retoma)", QColor(255, 159, 10)
         elif s.trava:
             nomes = {Gesto.NENHUM: "aguardando gesto", Gesto.LASER: "laser",
-                     Gesto.DESENHAR: "desenhando", Gesto.ABERTA: "mao aberta"}
+                     Gesto.DESENHAR: "desenhando", Gesto.SLIDE_PROXIMO: "slide seguinte",
+                     Gesto.SLIDE_ANTERIOR: "slide anterior"}
             if s.gesto == Gesto.LASER and s.modo_holofote:
                 nomes[Gesto.LASER] = "holofote"
             if s.ponteiro is None:
                 texto = "Trava ativa  |  mostre a mao direita"
+            elif s.segurando is not None:
+                texto = f"Trava ativa  |  segure: {nomes[s.segurando[0]]}"
             else:
                 texto = f"Trava ativa  |  {nomes[s.gesto]}"
             cor = QColor(52, 199, 89)

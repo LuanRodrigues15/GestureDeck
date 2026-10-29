@@ -131,8 +131,8 @@ class TestGestosComTrava(unittest.TestCase):
 
     def test_cursor_aparece_antes_de_qualquer_gesto(self):
         interp = novo()
-        # dois dedos esticados nao e laser, pinca nem mao aberta
-        qs = com_trava(interp, lambda i, n: ms.mao((True, True, False, False), centro=(0.63, 0.40)), 1.0)
+        # indicador e anelar esticados nao e laser, pinca nem gesto de slide
+        qs = com_trava(interp, lambda i, n: ms.mao((True, False, True, False), centro=(0.63, 0.40)), 1.0)
         self.assertEqual(qs[-1].gesto, Gesto.NENHUM)
         self.assertIsNotNone(qs[-1].ponteiro)
 
@@ -142,10 +142,10 @@ class TestGestosComTrava(unittest.TestCase):
         qs = rodar(interp, lambda i, n: [ms.punho()], t0=2.0, duracao=0.6)
         self.assertIsNone(qs[-1].ponteiro)
 
-    def test_mao_aberta_mantem_o_cursor(self):
+    def test_mao_aberta_mantem_o_cursor_sem_gesto(self):
         interp = novo()
         qs = com_trava(interp, lambda i, n: ms.aberta(), 1.0)
-        self.assertEqual(qs[-1].gesto, Gesto.ABERTA)
+        self.assertEqual(qs[-1].gesto, Gesto.NENHUM)
         self.assertIsNotNone(qs[-1].ponteiro)
 
     def test_so_a_mao_da_trava_nao_mostra_cursor(self):
@@ -155,67 +155,107 @@ class TestGestosComTrava(unittest.TestCase):
         self.assertIsNone(qs[-1].ponteiro)
 
 
-class TestDeslize(unittest.TestCase):
-    def _deslizar(self, x_ini, x_fim, duracao=0.45, extra=0.0):
-        interp = novo()
-        qs = com_trava(
-            interp,
-            lambda i, n: ms.aberta(centro=(x_ini + (x_fim - x_ini) * min(1.0, i / (n - 1)), 0.40)),
-            duracao + extra,
-        )
-        return [q.slide for q in qs if q.slide is not None]
+def eventos(qs):
+    return [q.slide for q in qs if q.slide is not None]
 
-    def test_deslize_que_cruza_a_mao_da_trava(self):
-        # a trava fica perto do centro e a mao direita passa por cima dela
+
+class TestSlide(unittest.TestCase):
+    """Dois dedos esticados: para cima avanca, para baixo volta."""
+
+    def test_dois_dedos_para_cima_avanca_uma_vez(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(), 2.0)
+        self.assertEqual(eventos(qs), [Slide.PROXIMO])
+        self.assertEqual(qs[-1].gesto, Gesto.SLIDE_PROXIMO)
+
+    def test_dois_dedos_para_baixo_volta(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(graus=180), 2.0)
+        self.assertEqual(eventos(qs), [Slide.ANTERIOR])
+
+    def test_so_dispara_depois_de_segurar(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(), 1.0)
+        primeiro = next(i for i, q in enumerate(qs) if q.slide is not None)
+        self.assertGreaterEqual(primeiro / FPS, 0.30)
+
+    def test_gesto_curto_nao_dispara(self):
+        interp = novo()
+        # 0.2 s com dois dedos e depois so o indicador
+        qs = com_trava(
+            interp, lambda i, n: ms.dois_dedos() if i < 6 else ms.laser(), 1.0
+        )
+        self.assertEqual(eventos(qs), [])
+
+    def test_de_lado_nao_dispara(self):
+        interp = novo()
+        for graus in (90, 270):
+            qs = com_trava(novo(), lambda i, n, g=graus: ms.dois_dedos(graus=g), 1.5)
+            self.assertEqual(eventos(qs), [], f"{graus} graus")
+
+    def test_inclinado_ate_o_limite_ainda_avanca(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(graus=25), 1.5)
+        self.assertEqual(eventos(qs), [Slide.PROXIMO])
+
+    def test_sem_trava_nao_troca(self):
+        interp = novo()
+        qs = rodar(interp, lambda i, n: [ms.dois_dedos()], duracao=2.0)
+        self.assertEqual(eventos(qs), [])
+
+    def test_repete_so_depois_de_sair_do_gesto(self):
+        interp = novo()
+        def acao(i, n):
+            # 1,2 s com dois dedos, 0,6 s so o indicador, 1,2 s com dois dedos
+            t = i / FPS
+            return ms.dois_dedos() if t < 1.2 or t >= 1.8 else ms.laser()
+        qs = com_trava(interp, acao, 3.0)
+        self.assertEqual(eventos(qs), [Slide.PROXIMO, Slide.PROXIMO])
+
+    def test_cooldown_impede_repeticao_rapida(self):
+        interp = novo()
+        def acao(i, n):
+            # sai e volta ao gesto em menos de 1 s: o segundo e ignorado
+            t = i / FPS
+            return ms.laser() if 0.6 <= t < 0.9 else ms.dois_dedos()
+        qs = com_trava(interp, acao, 1.6)
+        self.assertEqual(eventos(qs), [Slide.PROXIMO])
+
+    def test_mostra_o_progresso_enquanto_segura(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(), 1.0)
+        parciais = [q.segurando[1] for q in qs if q.segurando is not None]
+        self.assertTrue(parciais)
+        self.assertTrue(all(0.0 <= p <= 1.0 for p in parciais))
+        self.assertEqual(sorted(parciais), parciais)
+        self.assertIsNone(qs[-1].segurando)
+
+    def test_dois_dedos_nao_e_pinca_nem_laser(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(), 1.0)
+        self.assertNotIn(Gesto.DESENHAR, [q.gesto for q in qs])
+        self.assertNotIn(Gesto.LASER, [q.gesto for q in qs])
+
+    def test_laser_continua_funcionando(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.laser(), 1.0)
+        self.assertEqual(qs[-1].gesto, Gesto.LASER)
+        self.assertEqual(eventos(qs), [])
+
+    def test_maos_que_se_cruzam_nao_invertem_os_papeis(self):
         interp = novo()
         rodar(interp, lambda i, n: [ms.punho(centro=(0.45, 0.5))], duracao=1.0)
         qs = rodar(
             interp,
             lambda i, n: [
                 ms.punho(centro=(0.45, 0.5)),
-                ms.aberta(centro=(0.60 - 0.40 * min(1.0, i / (n - 1)), 0.40)),
+                ms.laser(centro=(0.60 - 0.40 * min(1.0, i / (n - 1)), 0.40)),
             ],
             t0=1.0,
-            duracao=0.45,
+            duracao=0.6,
         )
-        self.assertEqual([q.slide for q in qs if q.slide is not None], [Slide.PROXIMO])
         self.assertTrue(all(q.trava for q in qs))
-
-    def test_esquerda_avanca(self):
-        self.assertEqual(self._deslizar(0.85, 0.55), [Slide.PROXIMO])
-
-    def test_direita_volta(self):
-        self.assertEqual(self._deslizar(0.55, 0.85), [Slide.ANTERIOR])
-
-    def test_movimento_curto_nao_dispara(self):
-        self.assertEqual(self._deslizar(0.70, 0.66), [])
-
-    def test_ida_e_volta_so_conta_a_ida(self):
-        interp = novo()
-        def acao(i, n):
-            # 0.4 s indo para a esquerda e 0.4 s voltando
-            frac = i / n
-            x = 0.85 - 0.30 * (frac / 0.5) if frac < 0.5 else 0.55 + 0.30 * ((frac - 0.5) / 0.5)
-            return ms.aberta(centro=(x, 0.40))
-        qs = com_trava(interp, acao, 0.8)
-        eventos = [q.slide for q in qs if q.slide is not None]
-        self.assertEqual(eventos, [Slide.PROXIMO])
-
-    def test_sem_trava_nao_desliza(self):
-        interp = novo()
-        qs = rodar(
-            interp,
-            lambda i, n: [ms.aberta(centro=(0.85 - 0.30 * i / n, 0.40))],
-            duracao=0.5,
-        )
-        self.assertTrue(all(q.slide is None for q in qs))
-
-    def test_laser_se_movendo_nao_dispara(self):
-        interp = novo()
-        qs = com_trava(
-            interp, lambda i, n: ms.laser(centro=(0.85 - 0.35 * i / n, 0.40)), 0.5
-        )
-        self.assertTrue(all(q.slide is None for q in qs))
+        self.assertEqual(qs[-1].gesto, Gesto.LASER)
 
 
 if __name__ == "__main__":
