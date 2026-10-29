@@ -165,6 +165,22 @@ class TestDeslize(unittest.TestCase):
         )
         return [q.slide for q in qs if q.slide is not None]
 
+    def test_deslize_que_cruza_a_mao_da_trava(self):
+        # a trava fica perto do centro e a mao direita passa por cima dela
+        interp = novo()
+        rodar(interp, lambda i, n: [ms.punho(centro=(0.45, 0.5))], duracao=1.0)
+        qs = rodar(
+            interp,
+            lambda i, n: [
+                ms.punho(centro=(0.45, 0.5)),
+                ms.aberta(centro=(0.60 - 0.40 * min(1.0, i / (n - 1)), 0.40)),
+            ],
+            t0=1.0,
+            duracao=0.45,
+        )
+        self.assertEqual([q.slide for q in qs if q.slide is not None], [Slide.PROXIMO])
+        self.assertTrue(all(q.trava for q in qs))
+
     def test_esquerda_avanca(self):
         self.assertEqual(self._deslizar(0.85, 0.55), [Slide.PROXIMO])
 

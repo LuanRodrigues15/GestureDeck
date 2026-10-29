@@ -32,7 +32,7 @@ Python 3.10, OpenCV, MediaPipe (HandLandmarker, 21 pontos por mão), PySide6 (ja
 - **Dedo esticado sem depender da direção:** a ponta precisa estar mais longe do pulso que a articulação do meio, com as distâncias divididas pelo tamanho da mão. Assim os limiares valem perto e longe da câmera.
 - **Pinça:** distância polegar-indicador normalizada, com histerese (fecha em 0,30 e abre em 0,50) e debounce de cerca de 0,3 s.
 - **Ponteiro relativo:** a posição da mão vira posição na tela por uma zona ativa, com suavização exponencial adaptativa (filtro 1 euro). A âncora é a base do indicador, não a ponta, porque a ponta se mexe na pinça.
-- **Deslize:** palma aberta que percorre cerca de 3 tamanhos de mão em até 0,6 s. Depois do comando há 1 s de espera para o retorno da mão não virar o comando contrário.
+- **Deslize:** palma aberta que percorre cerca de 2 tamanhos de mão em até 0,7 s. Cada mão é acompanhada pela posição anterior, então o deslize funciona mesmo quando a mão direita cruza a esquerda. Depois do comando há 1 s de espera para o retorno da mão não virar o comando contrário.
 - **Janela transparente:** sem borda, sempre no topo, cliques atravessam e o foco continua no PowerPoint. A visão roda em uma thread e o desenho em outra.
 
 ## Como executar

@@ -84,7 +84,6 @@ class ThreadVisao(threading.Thread):
         ultimo_t = time.monotonic()
         fps = 0.0
         proximo_fps = 0.0
-        proximo_log = 0.0
         inicio_log = time.monotonic()
         while not self._parar.is_set():
             if camera.falhou:
@@ -115,15 +114,13 @@ class ThreadVisao(threading.Thread):
                 self.teclas.enviar(q.slide)
             self.sessao.aplicar(q)
 
-            if log is not None and agora >= proximo_log:
-                proximo_log = agora + 0.5
+            if log is not None:   # uma linha por quadro, para analisar deslizes rapidos
                 log.write(
-                    f"{agora - inicio_log:6.1f}s maos={len(maos)} trava={int(q.trava)} "
+                    f"{agora - inicio_log:7.2f}s maos={len(maos)} trava={int(q.trava)} "
                     f"gesto={q.gesto.value} cursor={'sim' if q.ponteiro else 'nao'} "
-                    f"fps={fps:.0f} brilho={frame.mean():.0f} | "
+                    f"slide={q.slide.name if q.slide else '-'} fps={fps:.0f} | "
                     + " | ".join(interp.depuracao[1:]) + "\n"
                 )
-                log.flush()
 
             fim = time.perf_counter()
             self.metricas.registrar_quadro(

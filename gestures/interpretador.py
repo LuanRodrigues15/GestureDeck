@@ -8,6 +8,10 @@ _EXPIRA_HISTORICO_S = 1.5
 _PAUSA_ABERTA_S = 0.2
 
 
+def _dist(a, b) -> float:
+    return float(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5)
+
+
 class Interpretador:
     def __init__(self, cfg, aspecto: float):
         self.cfg = cfg
@@ -22,8 +26,8 @@ class Interpretador:
         self._fx = FiltroUmEuro(m.filtro_min_cutoff, m.filtro_beta, m.filtro_d_cutoff)
         self._fy = FiltroUmEuro(m.filtro_min_cutoff, m.filtro_beta, m.filtro_d_cutoff)
         self._deslize = DetectorDeslize(cfg.deslize)
-        self._x_trava: float | None = None
-        self._x_acao: float | None = None
+        self._p_trava = None
+        self._p_acao = None
         self._t_historico = -1e9
         self._t_acao_visto = -1e9
         self._t_aberta_visto = -1e9
@@ -40,25 +44,37 @@ class Interpretador:
 
     # atribuicao das maos: por posicao, nunca pelo rotulo do MediaPipe
     def _atribuir(self, maos: list[Mao], t: float):
+        """Escolhe a mao da trava e a mao de acao.
+
+        Sem trava ativa, a mais a esquerda da imagem espelhada e a trava. Com a
+        trava ativa, cada mao e acompanhada pela posicao anterior: assim, quando
+        a mao direita cruza a esquerda no deslize, os papeis nao se invertem.
+        """
         if t - self._t_historico > _EXPIRA_HISTORICO_S:
-            self._x_trava = self._x_acao = None
+            self._p_trava = self._p_acao = None
         if not maos:
             return None, None
+        tem_historico = self._p_trava is not None and self._p_acao is not None
         if len(maos) >= 2:
-            ordenadas = sorted(maos, key=lambda m: m.palma[0])
-            mt, ma = ordenadas[0], ordenadas[-1]
-            self._x_trava, self._x_acao, self._t_historico = mt.palma[0], ma.palma[0], t
+            esq, dir_ = sorted(maos, key=lambda m: m.palma[0])[::len(maos) - 1]
+            mt, ma = esq, dir_
+            if self._trava.valor and tem_historico:
+                normal = _dist(esq.palma, self._p_trava) + _dist(dir_.palma, self._p_acao)
+                trocado = _dist(dir_.palma, self._p_trava) + _dist(esq.palma, self._p_acao)
+                if trocado < normal:
+                    mt, ma = dir_, esq
+            self._p_trava, self._p_acao, self._t_historico = mt.palma, ma.palma, t
             return mt, ma
         m = maos[0]
-        if self._x_trava is not None and self._x_acao is not None:
-            eh_trava = abs(m.palma[0] - self._x_trava) < abs(m.palma[0] - self._x_acao)
+        if tem_historico:
+            eh_trava = _dist(m.palma, self._p_trava) < _dist(m.palma, self._p_acao)
         else:
             eh_trava = m.fechada
         self._t_historico = t
         if eh_trava:
-            self._x_trava = m.palma[0]
+            self._p_trava = m.palma
             return m, None
-        self._x_acao = m.palma[0]
+        self._p_acao = m.palma
         return None, m
 
     def _postura_bruta(self, m: Mao) -> Gesto:
@@ -173,4 +189,6 @@ class Interpretador:
                 f"mao acao: x={ma.palma[0]:.2f} y={ma.palma[1]:.2f} dedos={ma.esticados} "
                 f"pinca={ma.pinca:.2f} tam={ma.tamanho:.3f}"
             )
+            if self._deslize.info:
+                linhas.append(self._deslize.info)
         return linhas

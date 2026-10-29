@@ -14,14 +14,17 @@ class DetectorDeslize:
         self.cfg = cfg
         self._amostras: deque = deque()
         self._livre_em = -1e9
+        self.info = ""   # ultimo calculo, para depuracao
 
     def reiniciar(self) -> None:
         self._amostras.clear()
+        self.info = ""
 
     def atualizar(self, t: float, x: float, y: float, tamanho: float) -> int | None:
         """Devolve -1 (movimento para a esquerda da imagem), +1 (direita) ou None."""
         if t < self._livre_em:
             self._amostras.clear()
+            self.info = "cooldown"
             return None
         a = self._amostras
         a.append((t, x, y, tamanho))
@@ -34,9 +37,14 @@ class DetectorDeslize:
         i_min = min(range(len(xs)), key=xs.__getitem__)
         deslocamento = xs[i_max] - xs[i_min]
         media_tamanho = sum(s[3] for s in a) / len(a)
+        vertical = abs(a[i_max][2] - a[i_min][2]) / max(deslocamento, 1e-6)
+        self.info = (
+            f"deslize: {deslocamento / media_tamanho:.1f} de {self.cfg.distancia_tamanhos:.1f} "
+            f"tamanhos, vertical={vertical:.2f}"
+        )
         if deslocamento < self.cfg.distancia_tamanhos * media_tamanho:
             return None
-        if abs(a[i_max][2] - a[i_min][2]) > self.cfg.vertical_max * deslocamento:
+        if vertical > self.cfg.vertical_max:
             return None
         self._livre_em = t + self.cfg.cooldown_s
         a.clear()

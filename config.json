@@ -37,9 +37,9 @@
     "perda_tolerancia_s": 0.25
   },
   "deslize": {
-    "janela_s": 0.6,
-    "distancia_tamanhos": 3.0,
-    "vertical_max": 0.6,
+    "janela_s": 0.7,
+    "distancia_tamanhos": 2.2,
+    "vertical_max": 0.8,
     "cooldown_s": 1.0,
     "inverter": false
   },
