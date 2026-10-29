@@ -61,7 +61,10 @@ Opções:
 | `--sem-overlay` | não cria a janela transparente (abre só a prévia) |
 | `--camera N` | escolhe a câmera |
 | `--monitor N` | escolhe o monitor do overlay |
+| `--encerrar` | fecha o GestureDeck que estiver rodando e libera a câmera |
 | `--simular` | usa gestos simulados no lugar da câmera, para testar o overlay |
+
+Para fechar, use F10, o ícone do GestureDeck na bandeja do Windows (botão direito, "Sair") ou feche a janela de prévia. Só uma cópia roda por vez, porque duas copias disputam a câmera e a imagem fica preta; se uma ficar presa, rode `python main.py --encerrar`.
 
 Os parâmetros (limites, tempos, cores, zona ativa, tempo e inversão do gesto de slide) ficam no `config.json`. Ao encerrar com F10, um relatório em JSON (slides trocados, traços, gestos reconhecidos, FPS e latência) é salvo na pasta `relatorios/`.
 

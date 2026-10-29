@@ -1,10 +1,12 @@
 """GestureDeck: controla o PowerPoint com gestos das maos."""
 import argparse
+import os
 import signal
 import sys
 from pathlib import Path
 
 import config as configuracao
+import instancia
 
 RAIZ = Path(__file__).resolve().parent
 
@@ -24,11 +26,18 @@ def ler_argumentos():
     p.add_argument("--simular", action="store_true",
                    help="usa gestos simulados em vez da camera (teste do overlay)")
     p.add_argument("--config", help="caminho de um config.json alternativo")
+    p.add_argument("--encerrar", action="store_true",
+                   help="fecha o GestureDeck que estiver rodando e libera a camera")
     return p.parse_args()
 
 
 def main() -> int:
     args = ler_argumentos()
+    if args.encerrar:
+        return instancia.encerrar_existente()
+    if not instancia.registrar():
+        print(instancia.mensagem_ja_em_execucao(), file=sys.stderr)
+        return 2
     cfg = configuracao.carregar(args.config)
     if args.camera is not None:
         cfg.camera.indice = args.camera
@@ -45,6 +54,7 @@ def main() -> int:
     from gestures.simulador import Simulador
     from metrics.relatorio import Metricas
     from overlay.atalhos import AtalhosGlobais
+    from overlay.bandeja import criar_bandeja
     from overlay.janela import JanelaOverlay
     from overlay.previa import Previa
     from overlay.sessao import Sessao
@@ -81,6 +91,7 @@ def main() -> int:
     if atalhos.falhas:
         print(f"Aviso: atalhos ocupados por outro programa: {', '.join(atalhos.falhas)}")
     app.installNativeEventFilter(atalhos)
+    bandeja = criar_bandeja(app.quit)   # a referencia mantem o icone vivo
 
     saida = {"codigo": 0}
 
@@ -98,10 +109,13 @@ def main() -> int:
 
     def encerrar():
         atalhos.liberar()
+        if bandeja is not None:
+            bandeja.hide()
         trabalho.parar()
         trabalho.join(timeout=3.0)
         caminho = metricas.salvar(RAIZ / cfg.relatorio.pasta)
         print(f"Relatorio salvo em {caminho}")
+        instancia.liberar()
 
     app.aboutToQuit.connect(encerrar)
     trabalho.start()
@@ -111,4 +125,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    codigo = main()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # saida imediata: threads do MediaPipe ou da camera nao podem manter o processo
+    # vivo, porque um processo vivo continua com a camera ligada
+    os._exit(codigo)
