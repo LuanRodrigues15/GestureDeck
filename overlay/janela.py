@@ -17,17 +17,19 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QWidget
 
-from gestures.eventos import Gesto
+from gestures.eventos import Gesto, Modo
+from overlay.icones import desenhar_mao
 
-_AJUDA = [
-    "GestureDeck",
-    "Mao esquerda fechada e levantada: habilita",
-    "Indicador esticado: laser",
-    "Pinca (polegar e indicador): desenhar",
-    "Dois dedos para cima: slide seguinte",
-    "Dois dedos e polegar (L): slide anterior",
-    "F1 ajuda   F2 laser/holofote   F9 pausa   F10 sair",
+# (pose, espelhar, titulo, detalhe)
+_DICAS = [
+    ("trava", False, "Modo slides", "Mao esquerda fechada"),
+    ("dois_dedos", False, "Slide seguinte", "Dois dedos, polegar dobrado"),
+    ("dois_dedos_l", False, "Slide anterior", "Dois dedos, polegar aberto"),
+    ("aberta", False, "Modo desenho", "Mao esquerda aberta"),
+    ("pinca", False, "Desenhar", "Pinca com os dedos"),
+    ("laser", False, "Laser", "Indicador, nos dois modos"),
 ]
+_ATALHOS = ["F1 ajuda   F2 laser/holofote", "F9 pausa   F10 sair"]
 _FONTE = "Segoe UI"
 
 
@@ -97,7 +99,8 @@ class JanelaOverlay(QWidget):
 
         self._tracos(p, s, h)
         if s.trava:
-            self._barra(p, s, h)
+            if s.modo == Modo.DESENHO:      # a paleta so aparece no modo desenho
+                self._barra(p, s, h)
             self._ponteiro(p, s, w, h)
         self._indicador(p, s, w, h)
         if s.ajuda:
@@ -311,13 +314,15 @@ class JanelaOverlay(QWidget):
                      Gesto.SLIDE_ANTERIOR: "slide anterior"}
             if s.gesto == Gesto.LASER and s.modo_holofote:
                 nomes[Gesto.LASER] = "holofote"
+            prefixo = {Modo.SLIDES: "Modo slides", Modo.DESENHO: "Modo desenho"}.get(
+                s.modo, "Trava ativa")
             if s.ponteiro is None:
-                texto = "Trava ativa  |  mostre a mao direita"
+                texto = f"{prefixo}  |  mostre a mao direita"
             elif s.segurando is not None:
-                texto = f"Trava ativa  |  segure: {nomes[s.segurando[0]]}"
+                texto = f"{prefixo}  |  segure: {nomes[s.segurando[0]]}"
             else:
-                texto = f"Trava ativa  |  {nomes[s.gesto]}"
-            cor = QColor(52, 199, 89)
+                texto = f"{prefixo}  |  {nomes[s.gesto]}"
+            cor = QColor(10, 132, 255) if s.modo == Modo.SLIDES else QColor(52, 199, 89)
         else:
             texto, cor = ("Trava inativa" if s.maos else "Sem maos"), QColor(142, 142, 147)
         partes = [texto, f"{s.fps:.0f} FPS"]
@@ -342,22 +347,56 @@ class JanelaOverlay(QWidget):
         p.drawText(QRectF(x + alt * 0.85, topo, larg, alt), Qt.AlignVCenter | Qt.AlignLeft, texto)
 
     def _ajuda(self, p, h):
-        fonte = QFont(_FONTE, max(8, int(h * 0.0105)))
-        p.setFont(fonte)
-        fm = QFontMetrics(fonte)
+        """Cartao vertical: titulo no topo, uma linha por gesto (mao desenhada e texto), atalhos."""
         margem = h * 0.02
-        pad = h * 0.012
-        larg = max(fm.horizontalAdvance(t) for t in _AJUDA) + 2 * pad
-        alt = fm.height() * len(_AJUDA) + 2 * pad
+        pad = h * 0.011
+        icone = h * 0.05
+        larg = h * 0.195
+        linha = icone + pad * 0.5
+        fonte = QFont(_FONTE, max(8, int(h * 0.0105)))
+        negrito = QFont(fonte)
+        negrito.setWeight(QFont.DemiBold)
+        pequena = QFont(_FONTE, max(7, int(h * 0.0083)))
+        fm_neg, fm_peq = QFontMetrics(negrito), QFontMetrics(pequena)
+        alt_titulo = fm_neg.height() * 1.5
+        alt_rodape = fm_peq.height() * len(_ATALHOS) + pad * 0.9
+        alt = pad * 2 + alt_titulo + linha * len(_DICAS) + alt_rodape
+
         p.setPen(QPen(QColor(255, 255, 255, 40), 1))
-        p.setBrush(QColor(20, 22, 28, 170))
+        p.setBrush(QColor(20, 22, 28, 185))
         p.drawRoundedRect(QRectF(margem, margem, larg, alt), pad, pad)
-        for i, linha in enumerate(_AJUDA):
-            negrito = QFont(fonte)
-            negrito.setBold(i == 0)
+
+        x, y = margem + pad, margem + pad
+        p.setFont(negrito)
+        p.setPen(QColor(255, 255, 255, 250))
+        p.drawText(QRectF(x, y, larg - 2 * pad, alt_titulo), Qt.AlignVCenter | Qt.AlignLeft, "GestureDeck")
+        y += alt_titulo
+
+        for pose, espelhar, titulo, detalhe in _DICAS:
+            caixa = QRectF(x, y, icone, icone)
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(255, 255, 255, 22))
+            p.drawRoundedRect(caixa, pad * 0.7, pad * 0.7)
+            desenhar_mao(p, caixa.adjusted(icone * 0.06, icone * 0.06, -icone * 0.06, -icone * 0.06),
+                         pose, espelhar)
+            texto = QRectF(x + icone + pad * 0.8, y, larg - 2 * pad - icone - pad * 0.8, icone)
             p.setFont(negrito)
-            p.setPen(QColor(255, 255, 255, 245 if i == 0 else 215))
-            p.drawText(QPointF(margem + pad, margem + pad + fm.ascent() + i * fm.height()), linha)
+            p.setPen(QColor(255, 255, 255, 245))
+            p.drawText(QRectF(texto.x(), texto.y() + icone * 0.08, texto.width(), fm_neg.height()),
+                       Qt.AlignLeft | Qt.AlignTop, titulo)
+            p.setFont(pequena)
+            p.setPen(QColor(255, 255, 255, 190))
+            p.drawText(QRectF(texto.x(), texto.y() + icone * 0.08 + fm_neg.height(),
+                              texto.width(), icone - fm_neg.height()),
+                       Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, detalhe)
+            y += linha
+
+        y += pad * 0.5
+        p.setFont(pequena)
+        p.setPen(QColor(255, 255, 255, 150))
+        for i, atalho in enumerate(_ATALHOS):
+            p.drawText(QRectF(x, y + i * fm_peq.height(), larg - 2 * pad, fm_peq.height()),
+                       Qt.AlignLeft | Qt.AlignVCenter, atalho)
 
     def _aviso(self, p, s, w, h):
         fonte = QFont(_FONTE, max(14, int(h * 0.03)))
