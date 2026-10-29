@@ -45,7 +45,8 @@
   },
   "acoes": {
     "tecla_proximo": "right",
-    "tecla_anterior": "left"
+    "tecla_anterior": "left",
+    "enviar_para_apresentacao": true
   },
   "overlay": {
     "monitor": 0,

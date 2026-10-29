@@ -49,7 +49,7 @@ python scripts/baixar_modelo.py
 python main.py
 ```
 
-Abra a apresentação no PowerPoint e inicie com F5. Com a tela duplicada no projetor, o overlay aparece nas duas saídas. Com a tela estendida, use `--monitor N` para escolher o monitor onde a apresentação roda.
+Abra a apresentação no PowerPoint e inicie com F5. A seta é enviada para a janela da apresentação, que vem para a frente se outra janela estiver em foco. Com `--ensaio` nenhuma tecla é enviada, só aparece o aviso "ENSAIO: Slide seguinte"; rode sem essa opção para o slide mudar de verdade. Com a tela duplicada no projetor, o overlay aparece nas duas saídas. Com a tela estendida, use `--monitor N` para escolher o monitor onde a apresentação roda.
 
 Opções:
 
