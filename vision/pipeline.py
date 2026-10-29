@@ -1,4 +1,5 @@
 """Thread de visao: camera, MediaPipe, interpretacao dos gestos e acoes."""
+import copy
 import threading
 import time
 import traceback
@@ -41,22 +42,59 @@ class ThreadVisao(threading.Thread):
         camera = None
         rastreador = None
         try:
-            camera = Camera(self.cfg.camera)
-            camera.abrir()
+            camera = self._abrir_camera()
             print(
-                f"Camera {self.cfg.camera.indice}: {camera.largura}x{camera.altura} "
-                f"{camera.formato or '?'}"
+                f"Camera {camera.indice}: {camera.largura}x{camera.altura} "
+                f"{camera.formato or '?'} ({camera.backend})"
             )
-            camera.iniciar()
+            self.sessao.definir_mensagem("Carregando o reconhecimento das maos...")
             rastreador = Rastreador(self.cfg.mediapipe, self.raiz)
+            self.sessao.definir_mensagem(None)
             self._laco(camera, rastreador)
-        except Exception:
+        except Exception as e:
             self.erro = traceback.format_exc()
+            self.sessao.definir_mensagem(f"ERRO: {e}. Feche com F10.", erro=True)
         finally:
             if rastreador is not None:
                 rastreador.fechar()
             if camera is not None:
                 camera.fechar()
+
+    def _abrir_camera(self) -> Camera:
+        """Abre a camera com algumas tentativas e os dois backends do Windows.
+
+        A camera so atende um programa por vez, e a abertura as vezes falha ou
+        abre sem enviar imagem, entao tenta de novo antes de desistir.
+        """
+        backends = [self.cfg.camera.backend] + [
+            b for b in ("dshow", "msmf") if b != self.cfg.camera.backend
+        ]
+        ultimo_erro = "motivo desconhecido"
+        for tentativa in range(1, 4):
+            for backend in backends:
+                if self._parar.is_set():
+                    raise RuntimeError("encerrado")
+                self.sessao.definir_mensagem(
+                    f"Abrindo a camera ({backend}, tentativa {tentativa} de 3)..."
+                )
+                cfg_camera = copy.copy(self.cfg.camera)
+                cfg_camera.backend = backend
+                camera = Camera(cfg_camera)
+                try:
+                    camera.abrir()
+                    camera.iniciar()
+                    if camera.proximo_quadro(0, 5.0) is not None:
+                        self.sessao.definir_mensagem(None)
+                        return camera
+                    ultimo_erro = f"a camera abriu ({backend}) mas nao enviou imagem"
+                except RuntimeError as e:
+                    ultimo_erro = str(e)
+                camera.fechar()
+            time.sleep(1.0)
+        raise RuntimeError(
+            f"Camera indisponivel ({ultimo_erro}). Feche outros programas que usam a "
+            f"camera (navegador, Discord, outra janela do GestureDeck)"
+        )
 
     def _abrir_log(self):
         if not self.depurar:

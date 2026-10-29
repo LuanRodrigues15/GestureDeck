@@ -47,6 +47,7 @@ class Instantaneo:
     cor_indice: int
     versao: int
     segurando: tuple | None = None
+    mensagem: tuple | None = None
 
 
 class Sessao:
@@ -71,7 +72,13 @@ class Sessao:
         self._travado_ate_sair = False
         self._progresso = 0.0
         self._versao = 0
+        self._mensagem: tuple[str, bool] | None = None
         self.definir_tela(1920, 1080)
+
+    @property
+    def mensagem(self) -> str | None:
+        with self._lock:
+            return self._mensagem[0] if self._mensagem else None
 
     # --- configuracao ---------------------------------------------------
     def definir_tela(self, largura: float, altura: float) -> None:
@@ -97,6 +104,12 @@ class Sessao:
             self.pausado = not self.pausado
             if self.pausado:
                 self._fechar_traco()
+            self._versao += 1
+
+    def definir_mensagem(self, texto: str | None, erro: bool = False) -> None:
+        """Mensagem de estado no indicador da tela (abrindo a camera, falhas)."""
+        with self._lock:
+            self._mensagem = (texto, erro) if texto else None
             self._versao += 1
 
     def definir_fps(self, fps: float) -> None:
@@ -266,4 +279,5 @@ class Sessao:
                 cor_indice=self.cor_indice,
                 versao=self._versao,
                 segurando=q.segurando if not self.pausado else None,
+                mensagem=self._mensagem,
             )

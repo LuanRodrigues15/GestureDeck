@@ -298,6 +298,11 @@ class JanelaOverlay(QWidget):
             p.drawLine(QPointF(c.x() - r, c.y() + r), QPointF(c.x() + r, c.y() - r))
 
     def _indicador(self, p, s, w, h):
+        if s.mensagem is not None:
+            texto, erro = s.mensagem
+            cor = QColor(255, 69, 58) if erro else QColor(255, 159, 10)
+            self._pilula(p, texto, cor, h * 0.02, h - h * 0.02, h, ancora_baixo=True)
+            return
         if s.pausado:
             texto, cor = "PAUSADO (F9 retoma)", QColor(255, 159, 10)
         elif s.trava:

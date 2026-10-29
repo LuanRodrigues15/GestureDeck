@@ -11,6 +11,8 @@ _FALHAS_MAXIMAS = 150
 class Camera:
     def __init__(self, cfg):
         self.cfg = cfg
+        self.indice = cfg.indice
+        self.backend = cfg.backend
         self.largura = 0
         self.altura = 0
         self.formato = ""

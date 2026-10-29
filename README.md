@@ -70,7 +70,8 @@ Os parâmetros (limites, tempos, cores, zona ativa, tempo e inversão do gesto d
 1. Rode `python main.py --ensaio --previa` e fique no lugar onde vai apresentar.
 2. O retângulo verde na prévia é a zona ativa. Ajuste `mapeamento.zona_ativa` no `config.json` para a área em que sua mão direita se move com conforto.
 3. Se a trava não ativar, confira `gestos.trava_altura_max` (quanto mais alto o valor, mais baixo a mão esquerda pode ficar).
-4. Em ambiente escuro a câmera pode cair de FPS. Acenda a luz ou defina `camera.exposicao` (por exemplo `-5`).
+4. Se a câmera não abrir, o indicador na tela e a janela de prévia mostram o motivo. O programa tenta 3 vezes com os dois backends do Windows (`dshow` e `msmf`). A câmera atende um programa por vez: feche o navegador, o Discord e qualquer outra janela do GestureDeck que a esteja usando. Para outra câmera, use `--camera N`.
+5. Em ambiente escuro a câmera pode cair de FPS. Acenda a luz ou defina `camera.exposicao` (por exemplo `-5`).
 
 ### Testes
 

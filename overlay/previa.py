@@ -32,9 +32,10 @@ def desenhar_previa(frame_bgr, maos, zona, linhas, largura=800):
 
 
 class Previa(QWidget):
-    def __init__(self, fornecedor):
+    def __init__(self, fornecedor, mensagem=None):
         super().__init__()
         self._fornecedor = fornecedor
+        self._mensagem = mensagem
         self.setWindowTitle("GestureDeck: camera")
         self._rotulo = QLabel("Aguardando a camera...")
         self._rotulo.setAlignment(Qt.AlignCenter)
@@ -49,6 +50,10 @@ class Previa(QWidget):
     def _atualizar(self) -> None:
         img = self._fornecedor()
         if img is None:
+            texto = self._mensagem() if self._mensagem else None
+            if texto:
+                self._rotulo.setText(texto)
+                self._rotulo.setWordWrap(True)
             return
         rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         h, w = rgb.shape[:2]

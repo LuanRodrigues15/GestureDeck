@@ -68,7 +68,7 @@ def main() -> int:
         overlay.mostrar()
         janelas.append(overlay)
     if (args.previa or args.sem_overlay) and not args.simular:
-        previa = Previa(trabalho.ultima_previa)
+        previa = Previa(trabalho.ultima_previa, lambda: sessao.mensagem)
         previa.show()
         janelas.append(previa)
 
@@ -85,10 +85,11 @@ def main() -> int:
     saida = {"codigo": 0}
 
     def vigiar():
-        if getattr(trabalho, "erro", None):
+        # o erro fica na tela (indicador e janela de previa) e o programa continua
+        # aberto ate o F10, para ele poder ser lido
+        if getattr(trabalho, "erro", None) and not saida["codigo"]:
             print(trabalho.erro, file=sys.stderr)
             saida["codigo"] = 1
-            app.quit()
 
     vigia = QTimer()
     vigia.timeout.connect(vigiar)
