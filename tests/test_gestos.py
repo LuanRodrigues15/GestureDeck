@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config as configuracao  # noqa: E402
 import maos_sinteticas as ms  # noqa: E402
-from gestures.eventos import Gesto, Slide  # noqa: E402
+from gestures.eventos import Gesto, Modo, Slide  # noqa: E402
 from gestures.geometria import montar_mao  # noqa: E402
 from gestures.interpretador import Interpretador  # noqa: E402
 
@@ -87,21 +87,45 @@ class TestTrava(unittest.TestCase):
     def test_soltar_a_trava_apos_atraso(self):
         interp = novo()
         rodar(interp, lambda i, n: [ms.punho()], duracao=1.0)
-        qs = rodar(interp, lambda i, n: [ms.aberta(centro=(0.3, 0.5))], t0=1.0, duracao=1.0)
+        # so o indicador na mao esquerda nao e punho nem mao aberta
+        qs = rodar(interp, lambda i, n: [ms.laser(centro=(0.3, 0.5))], t0=1.0, duracao=1.0)
         self.assertTrue(qs[3].trava)           # tolera falha curta
         self.assertFalse(qs[-1].trava)
 
     def test_trava_a_mais_a_esquerda(self):
         interp = novo()
-        # punho na direita e mao aberta na esquerda: a trava NAO e a da direita
-        qs = rodar(interp, lambda i, n: [ms.punho(centro=(0.8, 0.5)), ms.aberta(centro=(0.3, 0.5))])
+        # punho na direita e so o indicador na esquerda: a trava NAO e a da direita
+        qs = rodar(interp, lambda i, n: [ms.punho(centro=(0.8, 0.5)), ms.laser(centro=(0.3, 0.5))])
         self.assertFalse(qs[-1].trava)
+
+    def test_mao_aberta_levantada_ativa_o_modo_desenho(self):
+        interp = novo()
+        qs = rodar(interp, lambda i, n: [ms.aberta(centro=(0.3, 0.5))], duracao=1.0)
+        self.assertTrue(qs[-1].trava)
+        self.assertEqual(qs[-1].modo, Modo.DESENHO)
+
+    def test_punho_levantado_ativa_o_modo_slides(self):
+        interp = novo()
+        qs = rodar(interp, lambda i, n: [ms.punho()], duracao=1.0)
+        self.assertEqual(qs[-1].modo, Modo.SLIDES)
+
+    def test_mao_aberta_baixa_nao_ativa(self):
+        interp = novo()
+        qs = rodar(interp, lambda i, n: [ms.aberta(centro=(0.3, 0.85))], duracao=1.0)
+        self.assertTrue(all(not q.trava for q in qs))
 
 
 def com_trava(interp, acao, duracao, t0=1.0):
-    """Roda a trava por 1 s e depois a acao da mao direita."""
+    """Modo slides (punho esquerdo) por 1 s e depois a acao da mao direita."""
     rodar(interp, lambda i, n: [ms.punho()], duracao=1.0)
     return rodar(interp, lambda i, n: [ms.punho(), acao(i, n)], t0=t0, duracao=duracao)
+
+
+def com_desenho(interp, acao, duracao, t0=1.0):
+    """Modo desenho (mao esquerda aberta) por 1 s e depois a acao da mao direita."""
+    esquerda = ms.aberta(centro=(0.3, 0.5))
+    rodar(interp, lambda i, n: [esquerda], duracao=1.0)
+    return rodar(interp, lambda i, n: [esquerda, acao(i, n)], t0=t0, duracao=duracao)
 
 
 class TestGestosComTrava(unittest.TestCase):
@@ -121,13 +145,13 @@ class TestGestosComTrava(unittest.TestCase):
 
     def test_pinca_vira_desenhar(self):
         interp = novo()
-        qs = com_trava(interp, lambda i, n: ms.pinca(centro=(0.63, 0.40)), 1.0)
+        qs = com_desenho(interp, lambda i, n: ms.pinca(centro=(0.63, 0.40)), 1.0)
         self.assertEqual(qs[-1].gesto, Gesto.DESENHAR)
         self.assertIsNotNone(qs[-1].ponteiro)
 
     def test_pinca_exige_debounce(self):
         interp = novo()
-        qs = com_trava(interp, lambda i, n: ms.pinca(centro=(0.63, 0.40)), 1.0)
+        qs = com_desenho(interp, lambda i, n: ms.pinca(centro=(0.63, 0.40)), 1.0)
         self.assertNotEqual(qs[1].gesto, Gesto.DESENHAR)
 
     def test_piscada_da_pinca_nao_quebra_o_traco(self):
@@ -135,7 +159,7 @@ class TestGestosComTrava(unittest.TestCase):
         def acao(i, n):
             # 2 quadros soltando a pinca no meio (menos que o debounce de soltar)
             return ms.laser() if i in (15, 16) else ms.pinca()
-        qs = com_trava(interp, acao, 1.0)
+        qs = com_desenho(interp, acao, 1.0)
         self.assertTrue(all(q.gesto == Gesto.DESENHAR for q in qs[-14:]))
 
     def test_cursor_aparece_antes_de_qualquer_gesto(self):
@@ -295,6 +319,73 @@ class TestSlide(unittest.TestCase):
         )
         self.assertTrue(all(q.trava for q in qs))
         self.assertEqual(qs[-1].gesto, Gesto.LASER)
+
+
+class TestModos(unittest.TestCase):
+    """Mao esquerda fechada: slides. Mao esquerda aberta: desenho. Laser vale nos dois."""
+
+    def test_pinca_no_modo_slides_nao_desenha(self):
+        qs = com_trava(novo(), lambda i, n: ms.pinca(centro=(0.63, 0.40)), 1.5)
+        self.assertNotIn(Gesto.DESENHAR, [q.gesto for q in qs])
+
+    def test_fechar_a_mao_depois_do_slide_nao_desenha(self):
+        # o relato original: ao fechar os dedos depois de trocar de slide, o polegar encosta
+        # no indicador, a pinca dispara e riscava a tela
+        def acao(i, n):
+            return ms.dois_dedos() if i / FPS < 0.6 else ms.pinca(centro=(0.63, 0.40))
+        qs = com_trava(novo(), acao, 1.6)
+        self.assertEqual(eventos(qs), [Slide.PROXIMO])
+        self.assertNotIn(Gesto.DESENHAR, [q.gesto for q in qs])
+
+    def test_dois_dedos_no_modo_desenho_nao_troca_de_slide(self):
+        for polegar in (None, "L"):
+            qs = com_desenho(novo(), lambda i, n, p=polegar: ms.dois_dedos(polegar=p), 2.0)
+            self.assertEqual(eventos(qs), [], f"polegar={polegar}")
+            self.assertTrue(all(q.gesto not in (Gesto.SLIDE_PROXIMO, Gesto.SLIDE_ANTERIOR)
+                                for q in qs))
+            self.assertTrue(all(q.segurando is None for q in qs))
+
+    def test_laser_funciona_nos_dois_modos(self):
+        for rodar_modo in (com_trava, com_desenho):
+            qs = rodar_modo(novo(), lambda i, n: ms.laser(centro=(0.63, 0.40)), 1.0)
+            self.assertEqual(qs[-1].gesto, Gesto.LASER, rodar_modo.__name__)
+            self.assertIsNotNone(qs[-1].ponteiro)
+
+    def test_trocar_do_punho_para_a_mao_aberta_nao_derruba_a_trava(self):
+        interp = novo()
+        direita = ms.laser(centro=(0.63, 0.40))
+        rodar(interp, lambda i, n: [ms.punho(), direita], duracao=1.0)
+        # a mao esquerda passa 0,2 s numa postura intermediaria (so o indicador) ao abrir
+        def esquerda(i, n):
+            return ms.laser(centro=(0.3, 0.5)) if i / FPS < 0.2 else ms.aberta(centro=(0.3, 0.5))
+        qs = rodar(interp, lambda i, n: [esquerda(i, n), direita], t0=1.0, duracao=1.0)
+        self.assertTrue(all(q.trava for q in qs))
+        self.assertEqual(qs[-1].modo, Modo.DESENHO)
+
+    def test_trocar_de_modo_na_hora(self):
+        interp = novo()
+        rodar(interp, lambda i, n: [ms.punho(), ms.laser(centro=(0.63, 0.40))], duracao=1.0)
+        qs = rodar(
+            interp,
+            lambda i, n: [ms.aberta(centro=(0.3, 0.5)), ms.pinca(centro=(0.63, 0.40))],
+            t0=1.0,
+            duracao=1.0,
+        )
+        self.assertEqual(qs[0].modo, Modo.SLIDES)       # ainda dentro do tempo de ativacao
+        self.assertEqual(qs[-1].modo, Modo.DESENHO)
+        self.assertEqual(qs[-1].gesto, Gesto.DESENHAR)
+
+    def test_sair_do_modo_desenho_encerra_o_traco(self):
+        interp = novo()
+        com_desenho(interp, lambda i, n: ms.pinca(centro=(0.63, 0.40)), 1.0)
+        qs = rodar(
+            interp,
+            lambda i, n: [ms.punho(), ms.pinca(centro=(0.63, 0.40))],
+            t0=2.0,
+            duracao=1.0,
+        )
+        self.assertEqual(qs[-1].modo, Modo.SLIDES)
+        self.assertNotEqual(qs[-1].gesto, Gesto.DESENHAR)
 
 
 if __name__ == "__main__":

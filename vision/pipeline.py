@@ -154,7 +154,7 @@ class ThreadVisao(threading.Thread):
 
             if log is not None:   # uma linha por quadro
                 log.write(
-                    f"{agora - inicio_log:7.2f}s maos={len(maos)} trava={int(q.trava)} "
+                    f"{agora - inicio_log:7.2f}s maos={len(maos)} trava={int(q.trava)} modo={q.modo.value} "
                     f"gesto={q.gesto.value} cursor={'sim' if q.ponteiro else 'nao'} "
                     f"slide={q.slide.name if q.slide else '-'} fps={fps:.0f} | "
                     + " | ".join(interp.depuracao[1:]) + "\n"

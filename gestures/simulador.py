@@ -3,7 +3,7 @@ import math
 import threading
 import time
 
-from .eventos import Gesto, Quadro, Slide
+from .eventos import Gesto, Modo, Quadro, Slide
 
 
 class Simulador(threading.Thread):
@@ -46,7 +46,9 @@ class Simulador(threading.Thread):
                     slide, slide_enviado = Slide.PROXIMO, True
             if fase < 1.0:
                 slide_enviado = False
-            q = Quadro(t=t, trava=True, gesto=gesto, ponteiro=ponteiro, slide=slide, maos=2)
+            modo = Modo.SLIDES if gesto == Gesto.SLIDE_PROXIMO else Modo.DESENHO
+            q = Quadro(t=t, trava=True, gesto=gesto, ponteiro=ponteiro, slide=slide, maos=2,
+                       modo=modo)
             if slide is not None and self.ao_trocar_slide is not None:
                 self.ao_trocar_slide(slide)
             self.sessao.aplicar(q)

@@ -18,6 +18,13 @@ class Gesto(Enum):
 GESTOS_DE_SLIDE = (Gesto.SLIDE_PROXIMO, Gesto.SLIDE_ANTERIOR)
 
 
+class Modo(Enum):
+    """O que a mao esquerda levantada libera. O laser vale nos dois (e como se escolhe a cor)."""
+    NENHUM = "nenhum"
+    SLIDES = "slides"        # mao esquerda fechada: troca de slide, sem desenho
+    DESENHO = "desenho"      # mao esquerda aberta: desenho, sem troca de slide
+
+
 class Slide(Enum):
     PROXIMO = 1
     ANTERIOR = -1
@@ -26,9 +33,10 @@ class Slide(Enum):
 @dataclass(frozen=True)
 class Quadro:
     t: float                                   # segundos (relogio monotonico)
-    trava: bool = False                        # comandos habilitados
+    trava: bool = False                        # comandos habilitados (em qualquer modo)
     gesto: Gesto = Gesto.NENHUM                # gesto estavel da mao direita
     ponteiro: tuple[float, float] | None = None  # posicao na tela, 0..1
     slide: Slide | None = None                 # troca de slide neste quadro
     maos: int = 0                              # maos visiveis
     segurando: tuple[Gesto, float] | None = None  # gesto de slide em confirmacao, 0..1
+    modo: Modo = Modo.NENHUM                   # com `trava`, qual dos dois modos esta ativo
