@@ -61,6 +61,7 @@ class Mao:
     tamanho: float
     esticados: tuple          # (indicador, medio, anelar, minimo)
     pinca: float              # distancia polegar-indicador / tamanho
+    polegar: float            # ponta do polegar ate a base do indicador / tamanho
     eixo: tuple               # direcao do pulso para as pontas do indicador e do medio
 
     @property
@@ -106,5 +107,6 @@ def montar_mao(pontos: np.ndarray, aspecto: float, limiar: float) -> Mao:
         tamanho=tam,
         esticados=esticados,
         pinca=razao_pinca(p, tam),
+        polegar=distancia(p[POLEGAR_PONTA], p[5]) / tam,
         eixo=(float(vetor[0]) / norma, float(vetor[1]) / norma),
     )

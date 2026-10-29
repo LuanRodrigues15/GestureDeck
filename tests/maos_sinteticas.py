@@ -20,16 +20,23 @@ _DOBRADO = {
 _POLEGAR_ABERTO = [(-0.35, -0.25), (-0.60, -0.50), (-0.80, -0.75), (-0.95, -0.95)]
 _POLEGAR_FECHADO = [(-0.35, -0.25), (-0.45, -0.55), (-0.30, -0.70), (-0.05, -0.70)]
 _POLEGAR_PINCA = [(-0.35, -0.25), (-0.55, -0.80), (-0.50, -1.40), (-0.45, -1.95)]
+_POLEGAR_L = [(-0.35, -0.25), (-0.70, -0.55), (-0.95, -0.85), (-1.15, -1.00)]
+_POLEGAR_MEIO = [(-0.35, -0.25), (-0.65, -0.55), (-0.85, -0.80), (-1.02, -0.95)]
+_POLEGARES = {"L": _POLEGAR_L, "meio": _POLEGAR_MEIO, "dobrado": _POLEGAR_FECHADO}
 
 NOMES = ("indicador", "medio", "anelar", "minimo")
 
 
 def mao(esticados=(False, False, False, False), pinca=False, centro=(0.6, 0.5),
-        escala=0.12, aspecto=16 / 9) -> np.ndarray:
+        escala=0.12, aspecto=16 / 9, polegar=None) -> np.ndarray:
     """`centro` e a posicao normalizada da base do dedo medio; `escala` e o
-    tamanho da mao como fracao da altura da imagem."""
+    tamanho da mao como fracao da altura da imagem. `polegar` pode ser "L"
+    (aberto), "meio" (solto, ambiguo) ou "dobrado"."""
     pts = [(0.0, 0.0)]
-    pts += _POLEGAR_PINCA if pinca else (_POLEGAR_ABERTO if all(esticados) else _POLEGAR_FECHADO)
+    if polegar is not None:
+        pts += _POLEGARES[polegar]
+    else:
+        pts += _POLEGAR_PINCA if pinca else (_POLEGAR_ABERTO if all(esticados) else _POLEGAR_FECHADO)
     for nome, aberto in zip(NOMES, esticados):
         pts += (_ESTICADO if aberto else _DOBRADO)[nome]
     pts = np.array(pts, dtype=float)
@@ -55,7 +62,9 @@ def girar(pontos: np.ndarray, graus: float, aspecto: float = 16 / 9) -> np.ndarr
 
 
 def dois_dedos(centro=(0.7, 0.4), graus=0.0, **kw):
-    """Indicador e medio esticados; `graus` gira a mao (0 = para cima, 180 = para baixo)."""
+    """Indicador e medio esticados; `graus` gira a mao (0 = para cima, 180 = para baixo).
+
+    Com `polegar="L"` e o gesto de voltar (dois dedos e polegar aberto)."""
     return girar(mao((True, True, False, False), centro=centro, **kw), graus)
 
 

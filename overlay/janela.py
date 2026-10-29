@@ -25,7 +25,7 @@ _AJUDA = [
     "Indicador esticado: laser",
     "Pinca (polegar e indicador): desenhar",
     "Dois dedos para cima: slide seguinte",
-    "Dois dedos para baixo: slide anterior",
+    "Dois dedos e polegar (L): slide anterior",
     "F1 ajuda   F2 laser/holofote   F9 pausa   F10 sair",
 ]
 _FONTE = "Segoe UI"

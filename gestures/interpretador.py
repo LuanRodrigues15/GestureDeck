@@ -80,15 +80,7 @@ class Interpretador:
     def _postura_bruta(self, m: Mao) -> Gesto:
         g = self.cfg.gestos
         if m.dois_dedos and not self._pinca:
-            # indicador e medio esticados: o indicador nao pode estar fazendo pinca
-            direcao = m.direcao_vertical(self.cfg.slide.angulo_max)
-            if self.cfg.slide.inverter:
-                direcao = -direcao
-            if direcao > 0:
-                return Gesto.SLIDE_PROXIMO
-            if direcao < 0:
-                return Gesto.SLIDE_ANTERIOR
-            return Gesto.NENHUM
+            return self._gesto_de_slide(m)
         if self._pinca:
             if m.pinca > g.pinca_abrir:
                 self._pinca = False
@@ -99,6 +91,25 @@ class Interpretador:
         if m.laser:
             return Gesto.LASER
         return Gesto.NENHUM
+
+    def _gesto_de_slide(self, m: Mao) -> Gesto:
+        """Indicador e medio para cima: polegar dobrado avanca, polegar aberto (L) volta.
+
+        O polegar entre os dois limites e ambiguo e nao conta, para um polegar
+        meio solto no gesto de avancar nao virar o comando de voltar.
+        """
+        s = self.cfg.slide
+        if m.direcao_vertical(s.angulo_max) <= 0:
+            return Gesto.NENHUM
+        if m.polegar >= s.polegar_esticado_min:
+            volta = True
+        elif m.polegar <= s.polegar_dobrado_max:
+            volta = False
+        else:
+            return Gesto.NENHUM
+        if s.inverter:
+            volta = not volta
+        return Gesto.SLIDE_ANTERIOR if volta else Gesto.SLIDE_PROXIMO
 
     def _mapear(self, m: Mao, t: float) -> tuple[float, float]:
         cfg = self.cfg.mapeamento
@@ -197,7 +208,7 @@ class Interpretador:
         if ma is not None:
             linhas.append(
                 f"mao acao: x={ma.palma[0]:.2f} y={ma.palma[1]:.2f} dedos={ma.esticados} "
-                f"pinca={ma.pinca:.2f} tam={ma.tamanho:.3f} "
+                f"pinca={ma.pinca:.2f} polegar={ma.polegar:.2f} tam={ma.tamanho:.3f} "
                 f"eixo=({ma.eixo[0]:.2f},{ma.eixo[1]:.2f})"
             )
         return linhas

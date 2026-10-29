@@ -39,6 +39,8 @@
   "slide": {
     "segurar_s": 0.35,
     "angulo_max": 40,
+    "polegar_dobrado_max": 0.62,
+    "polegar_esticado_min": 0.78,
     "cooldown_s": 1.0,
     "inverter": false
   },

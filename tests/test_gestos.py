@@ -44,6 +44,15 @@ class TestGeometria(unittest.TestCase):
         self.assertLess(m.pinca, 0.30)
         self.assertGreater(montar_mao(ms.laser(), ASPECTO, self.limiar).pinca, 0.50)
 
+    def test_polegar_dobrado_aberto_e_ambiguo(self):
+        s = configuracao.carregar(RAIZ / "config.json").slide
+        dobrado = montar_mao(ms.dois_dedos(), ASPECTO, self.limiar)
+        aberto = montar_mao(ms.dois_dedos(polegar="L"), ASPECTO, self.limiar)
+        meio = montar_mao(ms.dois_dedos(polegar="meio"), ASPECTO, self.limiar)
+        self.assertLessEqual(dobrado.polegar, s.polegar_dobrado_max)
+        self.assertGreaterEqual(aberto.polegar, s.polegar_esticado_min)
+        self.assertTrue(s.polegar_dobrado_max < meio.polegar < s.polegar_esticado_min)
+
     def test_independe_da_distancia(self):
         for escala in (0.05, 0.12, 0.30):
             m = montar_mao(ms.laser(escala=escala), ASPECTO, self.limiar)
@@ -168,10 +177,33 @@ class TestSlide(unittest.TestCase):
         self.assertEqual(eventos(qs), [Slide.PROXIMO])
         self.assertEqual(qs[-1].gesto, Gesto.SLIDE_PROXIMO)
 
-    def test_dois_dedos_para_baixo_volta(self):
+    def test_dois_dedos_e_polegar_em_L_volta(self):
         interp = novo()
-        qs = com_trava(interp, lambda i, n: ms.dois_dedos(graus=180), 2.0)
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(polegar="L"), 2.0)
         self.assertEqual(eventos(qs), [Slide.ANTERIOR])
+        self.assertEqual(qs[-1].gesto, Gesto.SLIDE_ANTERIOR)
+
+    def test_avancar_e_voltar_em_sequencia(self):
+        interp = novo()
+        qs = com_trava(
+            interp,
+            lambda i, n: ms.dois_dedos() if i / FPS < 1.5 else ms.dois_dedos(polegar="L"),
+            3.0,
+        )
+        self.assertEqual(eventos(qs), [Slide.PROXIMO, Slide.ANTERIOR])
+
+    def test_polegar_meio_solto_nao_dispara_nada(self):
+        interp = novo()
+        qs = com_trava(interp, lambda i, n: ms.dois_dedos(polegar="meio"), 2.0)
+        self.assertEqual(eventos(qs), [])
+        self.assertEqual(qs[-1].gesto, Gesto.NENHUM)
+
+    def test_dois_dedos_para_baixo_nao_dispara(self):
+        for polegar in (None, "L"):
+            qs = com_trava(
+                novo(), lambda i, n, p=polegar: ms.dois_dedos(graus=180, polegar=p), 2.0
+            )
+            self.assertEqual(eventos(qs), [], f"polegar={polegar}")
 
     def test_so_dispara_depois_de_segurar(self):
         interp = novo()
@@ -188,10 +220,12 @@ class TestSlide(unittest.TestCase):
         self.assertEqual(eventos(qs), [])
 
     def test_de_lado_nao_dispara(self):
-        interp = novo()
         for graus in (90, 270):
-            qs = com_trava(novo(), lambda i, n, g=graus: ms.dois_dedos(graus=g), 1.5)
-            self.assertEqual(eventos(qs), [], f"{graus} graus")
+            for polegar in (None, "L"):
+                qs = com_trava(
+                    novo(), lambda i, n, g=graus, p=polegar: ms.dois_dedos(graus=g, polegar=p), 1.5
+                )
+                self.assertEqual(eventos(qs), [], f"{graus} graus, polegar={polegar}")
 
     def test_inclinado_ate_o_limite_ainda_avanca(self):
         interp = novo()
@@ -231,10 +265,15 @@ class TestSlide(unittest.TestCase):
         self.assertIsNone(qs[-1].segurando)
 
     def test_dois_dedos_nao_e_pinca_nem_laser(self):
-        interp = novo()
-        qs = com_trava(interp, lambda i, n: ms.dois_dedos(), 1.0)
-        self.assertNotIn(Gesto.DESENHAR, [q.gesto for q in qs])
-        self.assertNotIn(Gesto.LASER, [q.gesto for q in qs])
+        for polegar in (None, "L"):
+            qs = com_trava(novo(), lambda i, n, p=polegar: ms.dois_dedos(polegar=p), 1.0)
+            self.assertNotIn(Gesto.DESENHAR, [q.gesto for q in qs])
+            self.assertNotIn(Gesto.LASER, [q.gesto for q in qs])
+
+    def test_laser_com_polegar_aberto_continua_laser(self):
+        qs = com_trava(novo(), lambda i, n: ms.mao((True, False, False, False), polegar="L"), 1.0)
+        self.assertEqual(qs[-1].gesto, Gesto.LASER)
+        self.assertEqual(eventos(qs), [])
 
     def test_laser_continua_funcionando(self):
         interp = novo()
