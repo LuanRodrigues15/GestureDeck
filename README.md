@@ -4,7 +4,7 @@ Projeto da disciplina **Cognitive Computing, Computer Vision and IoT Systems** (
 
 ## Descrição do projeto
 
-O **GestureDeck** é um programa que permite controlar uma apresentação do PowerPoint com as mãos, usando uma câmera comum. O apresentador fica de pé, longe do computador, e com a **mão direita** aponta um laser na tela, desenha sobre o slide e passa os slides para frente ou para trás. Os comandos só funcionam enquanto a **mão esquerda** está fechada e levantada, o que evita acionar algo sem querer quando ele gesticula ao falar.
+O **GestureDeck** é um programa que permite controlar uma apresentação do PowerPoint com as mãos, usando uma câmera comum. O apresentador fica de pé, longe do computador, e com a **mão direita** aponta um laser na tela, desenha sobre o slide e passa os slides para frente ou para trás. Os comandos só funcionam enquanto a **mão esquerda** está levantada, o que evita acionar algo sem querer quando ele gesticula ao falar. A mão esquerda também escolhe o modo: **fechada** libera a troca de slides e **aberta** libera o desenho. Como os dois nunca valem ao mesmo tempo, fechar os dedos para trocar de slide não risca a tela.
 
 A câmera acompanha as duas mãos em tempo real com o MediaPipe. O laser e os desenhos aparecem numa janela transparente sobre a tela, por isso também são vistos por quem assiste a apresentação remotamente (compartilhando a tela inteira). Assim, não é preciso mouse, teclado nem passador de slides.
 
@@ -12,15 +12,18 @@ A câmera acompanha as duas mãos em tempo real com o MediaPipe. O laser e os de
 
 | Ação | Gesto |
 |---|---|
-| Habilitar os comandos (trava) | Mão esquerda fechada e levantada, mantida |
-| Laser | Mão direita com o indicador esticado, como o número 1 |
-| Desenhar | Pinça (polegar e indicador) mantida, movendo a mão |
-| Slide seguinte | Mão direita com indicador e médio esticados apontando para cima e o polegar dobrado, mantida por cerca de 0,35 s |
-| Slide anterior | Mesma mão, mas com o polegar aberto para o lado, formando um L, mantida por cerca de 0,35 s |
+| Modo slides (trava) | Mão esquerda fechada e levantada, mantida |
+| Modo desenho (trava) | Mão esquerda aberta e levantada, mantida |
+| Laser (nos dois modos) | Mão direita com o indicador esticado, como o número 1 |
+| Desenhar (modo desenho) | Pinça (polegar e indicador) mantida, movendo a mão |
+| Slide seguinte (modo slides) | Mão direita com indicador e médio esticados apontando para cima e o polegar dobrado, mantida por cerca de 0,35 s |
+| Slide anterior (modo slides) | Mesma mão, mas com o polegar aberto para o lado, formando um L, mantida por cerca de 0,35 s |
 
-Com a trava ativa, um holofote pequeno acompanha a mão direita como o cursor de um mouse, mostrando onde o laser vai apontar e onde o traço vai começar. Ele ganha a cor da caneta quando você desenha. Se a trava estiver ativa mas a mão direita não aparecer na câmera, o indicador na tela avisa.
+No modo slides a pinça é ignorada, e no modo desenho os dois dedos não trocam de slide. O laser vale nos dois porque é com ele que se escolhe a cor na barra. Ao trocar de modo, o gesto do modo anterior é descartado.
 
-Enquanto a trava está ativa, uma barra na borda da tela permite escolher a cor, usar a borracha, desfazer e limpar o desenho, bastando manter o laser parado sobre o item por cerca de 1 segundo. Teclas: **F1** cartão de ajuda, **F2** laser ou holofote, **F9** pausar, **F10** sair.
+Com um modo ativo, um holofote pequeno acompanha a mão direita como o cursor de um mouse, mostrando onde o laser vai apontar e onde o traço vai começar. Ele ganha a cor da caneta quando você desenha. Se um modo estiver ativo mas a mão direita não aparecer na câmera, o indicador na tela avisa.
+
+Enquanto o modo desenho está ativo (e só nele), uma barra na borda da tela permite escolher a cor, usar a borracha, desfazer e limpar o desenho, bastando manter o laser parado sobre o item por cerca de 1 segundo. Teclas: **F1** cartão de ajuda, **F2** laser ou holofote, **F9** pausar, **F10** sair.
 
 ## Tecnologias
 
@@ -29,6 +32,7 @@ Python 3.10, OpenCV, MediaPipe (HandLandmarker, 21 pontos por mão), PySide6 (ja
 ## Como funciona
 
 - **Trava por posição:** de duas mãos, a mais à esquerda na imagem espelhada é a trava e a outra age. O rótulo esquerda/direita do MediaPipe não é usado.
+- **Modo pela mão da trava:** punho (nenhum dedo esticado) é o modo slides e mão aberta (os quatro dedos esticados) é o modo desenho, os dois só com a mão acima de `gestos.trava_altura_max`. Ligar ou trocar de modo exige `gestos.trava_ativar_s`; largar a trava exige `gestos.trava_soltar_s`, que é maior e cobre a passagem de punho para mão aberta sem derrubar a trava.
 - **Dedo esticado sem depender da direção:** a ponta precisa estar mais longe do pulso que a articulação do meio, com as distâncias divididas pelo tamanho da mão. Assim os limiares valem perto e longe da câmera.
 - **Pinça:** distância polegar-indicador normalizada, com histerese (fecha em 0,30 e abre em 0,50) e debounce de cerca de 0,3 s.
 - **Ponteiro relativo:** a posição da mão vira posição na tela por uma zona ativa, com suavização exponencial adaptativa (filtro 1 euro). A âncora é a base do indicador, não a ponta, porque a ponta se mexe na pinça.
@@ -93,6 +97,7 @@ Projetos open source usados como base de ideias:
 - [wayscriber](https://github.com/devmobasa/wayscriber) e [Projecteur](https://github.com/jahnf/projecteur) (MIT): laser com rastro, holofote e janela de anotação sobre a tela.
 - [1€ Filter](https://github.com/jaantollander/oneeurofilter) (MIT): suavização do ponteiro.
 - [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (Google): modelo de detecção das mãos.
+- [Twemoji](https://github.com/jdecked/twemoji) (gráficos CC-BY 4.0): ícones de mão do cartão de ajuda, em `assets/icones/`.
 
 ## Diagrama de funcionamento
 
