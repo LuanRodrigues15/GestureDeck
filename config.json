@@ -1,0 +1,68 @@
+{
+  "camera": {
+    "indice": 0,
+    "backend": "dshow",
+    "largura": 1920,
+    "altura": 1080,
+    "fps": 30,
+    "formato": "MJPG",
+    "exposicao": null,
+    "espelhar": true
+  },
+  "roi": [0.0, 0.0, 1.0, 1.0],
+  "escala_processamento": 1.0,
+  "mediapipe": {
+    "modelo": "models/hand_landmarker.task",
+    "confianca_deteccao": 0.5,
+    "confianca_presenca": 0.5,
+    "confianca_rastreio": 0.5
+  },
+  "mapeamento": {
+    "zona_ativa": [0.38, 0.12, 0.88, 0.68],
+    "ancora": "base_indicador",
+    "filtro_min_cutoff": 1.2,
+    "filtro_beta": 8.0,
+    "filtro_d_cutoff": 1.0
+  },
+  "gestos": {
+    "dedo_esticado_limiar": 0.15,
+    "pinca_fechar": 0.30,
+    "pinca_abrir": 0.50,
+    "pinca_ativar_s": 0.20,
+    "pinca_soltar_s": 0.30,
+    "postura_estavel_s": 0.12,
+    "trava_altura_max": 0.70,
+    "trava_ativar_s": 0.25,
+    "trava_soltar_s": 0.40,
+    "perda_tolerancia_s": 0.25
+  },
+  "slide": {
+    "segurar_s": 0.35,
+    "angulo_max": 40,
+    "polegar_dobrado_max": 0.62,
+    "polegar_esticado_min": 0.78,
+    "cooldown_s": 1.0,
+    "inverter": false
+  },
+  "acoes": {
+    "tecla_proximo": "right",
+    "tecla_anterior": "left",
+    "enviar_para_apresentacao": true
+  },
+  "overlay": {
+    "monitor": 0,
+    "modo_inicial": "laser",
+    "cores": ["#FF3B30", "#FFCC00", "#34C759", "#0A84FF", "#FF2D95"],
+    "espessura": 0.006,
+    "laser_raio": 0.014,
+    "holofote_raio": 0.10,
+    "cursor_raio": 0.045,
+    "borracha_raio": 0.03,
+    "barra_lado": "direita",
+    "permanencia_s": 1.0,
+    "ajuda_inicial": true
+  },
+  "relatorio": {
+    "pasta": "relatorios"
+  }
+}
