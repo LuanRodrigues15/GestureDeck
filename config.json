@@ -54,6 +54,7 @@
     "espessura": 0.006,
     "laser_raio": 0.014,
     "holofote_raio": 0.10,
+    "cursor_raio": 0.045,
     "borracha_raio": 0.03,
     "barra_lado": "direita",
     "permanencia_s": 1.0,

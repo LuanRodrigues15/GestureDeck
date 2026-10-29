@@ -129,6 +129,19 @@ class TestGestosComTrava(unittest.TestCase):
         qs = com_trava(interp, acao, 1.0)
         self.assertTrue(all(q.gesto == Gesto.DESENHAR for q in qs[-14:]))
 
+    def test_cursor_aparece_antes_de_qualquer_gesto(self):
+        interp = novo()
+        # dois dedos esticados nao e laser, pinca nem mao aberta
+        qs = com_trava(interp, lambda i, n: ms.mao((True, True, False, False), centro=(0.63, 0.40)), 1.0)
+        self.assertEqual(qs[-1].gesto, Gesto.NENHUM)
+        self.assertIsNotNone(qs[-1].ponteiro)
+
+    def test_cursor_some_quando_a_mao_sai_da_imagem(self):
+        interp = novo()
+        com_trava(interp, lambda i, n: ms.laser(centro=(0.63, 0.40)), 1.0)
+        qs = rodar(interp, lambda i, n: [ms.punho()], t0=2.0, duracao=0.6)
+        self.assertIsNone(qs[-1].ponteiro)
+
     def test_mao_aberta_nao_mostra_ponteiro(self):
         interp = novo()
         qs = com_trava(interp, lambda i, n: ms.aberta(), 1.0)

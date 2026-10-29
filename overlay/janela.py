@@ -130,9 +130,14 @@ class JanelaOverlay(QWidget):
         return caminho
 
     def _ponteiro(self, p, s, w, h):
-        if s.ponteiro is None or s.gesto not in (Gesto.LASER, Gesto.DESENHAR):
+        if s.ponteiro is None or s.gesto == Gesto.ABERTA:
             return
         x, y = s.ponteiro[0] * w, s.ponteiro[1] * h
+        holofote_grande = s.gesto == Gesto.LASER and s.modo_holofote
+        if not holofote_grande:
+            self._cursor(p, s, x, y, self.cfg.cursor_raio * h)
+        if s.gesto == Gesto.NENHUM:
+            return
         if s.gesto == Gesto.DESENHAR:
             if s.ferramenta == "borracha":
                 raio = self.cfg.borracha_raio * h
@@ -149,6 +154,42 @@ class JanelaOverlay(QWidget):
             self._holofote(p, x, y, self.cfg.holofote_raio * h)
         else:
             self._laser(p, s, x, y, self.cfg.laser_raio * h)
+
+    @staticmethod
+    def _cursor(p, s, x, y, raio):
+        """Holofote pequeno que mostra onde o ponteiro esta, como um cursor de mouse."""
+        if s.gesto == Gesto.DESENHAR and s.ferramenta == "caneta":
+            base = QColor(s.cor_atual)      # a luz toma a cor da caneta
+            base = QColor(
+                (base.red() + 255) // 2, (base.green() + 255) // 2, (base.blue() + 255) // 2
+            )
+        else:
+            base = QColor(255, 250, 225)
+        JanelaOverlay._sombra(p, x, y, raio)
+        luz = QRadialGradient(QPointF(x, y), raio)
+        luz.setColorAt(0.0, QColor(base.red(), base.green(), base.blue(), 190))
+        luz.setColorAt(0.6, QColor(base.red(), base.green(), base.blue(), 110))
+        luz.setColorAt(1.0, QColor(base.red(), base.green(), base.blue(), 0))
+        p.setPen(Qt.NoPen)
+        p.setBrush(QBrush(luz))
+        p.drawEllipse(QPointF(x, y), raio, raio)
+        # anel branco com contorno escuro: aparece em slide claro e escuro
+        p.setBrush(Qt.NoBrush)
+        p.setPen(QPen(QColor(0, 0, 0, 130), 4.5))
+        p.drawEllipse(QPointF(x, y), raio * 0.55, raio * 0.55)
+        p.setPen(QPen(QColor(255, 255, 255, 235), 2.2))
+        p.drawEllipse(QPointF(x, y), raio * 0.55, raio * 0.55)
+
+    @staticmethod
+    def _sombra(p, x, y, raio, alfa=70):
+        """Borda escura bem suave que separa a luz do fundo quando ele e claro."""
+        sombra = QRadialGradient(QPointF(x, y), raio * 1.35)
+        sombra.setColorAt(0.55, QColor(0, 0, 0, 0))
+        sombra.setColorAt(0.8, QColor(0, 0, 0, alfa))
+        sombra.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.setPen(Qt.NoPen)
+        p.setBrush(QBrush(sombra))
+        p.drawEllipse(QPointF(x, y), raio * 1.35, raio * 1.35)
 
     @staticmethod
     def _laser(p, s, x, y, raio):
@@ -174,6 +215,7 @@ class JanelaOverlay(QWidget):
 
     @staticmethod
     def _holofote(p, x, y, raio):
+        JanelaOverlay._sombra(p, x, y, raio, alfa=30)
         luz = QRadialGradient(QPointF(x, y), raio)
         luz.setColorAt(0.0, QColor(255, 250, 225, 150))
         luz.setColorAt(0.55, QColor(255, 250, 225, 95))

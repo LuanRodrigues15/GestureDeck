@@ -4,7 +4,6 @@ from .eventos import Gesto, Quadro, Slide
 from .filtros import Estabilizador, FiltroUmEuro
 from .geometria import Mao, montar_mao
 
-_COM_PONTEIRO = (Gesto.LASER, Gesto.DESENHAR)
 _EXPIRA_HISTORICO_S = 1.5
 _PAUSA_ABERTA_S = 0.2
 
@@ -115,8 +114,11 @@ class Interpretador:
                 self._pinca = False
             gesto = self._postura.atualizar(bruto, t)
 
-            if gesto in _COM_PONTEIRO:
-                if mao_acao is not None and bruto in _COM_PONTEIRO:
+            # o cursor acompanha a mao sempre que ela esta visivel, para o
+            # apresentador saber onde vai apontar ou comecar a desenhar
+            visivel = mao_acao is not None or t - self._t_acao_visto < g.perda_tolerancia_s
+            if gesto != Gesto.ABERTA and visivel:
+                if mao_acao is not None and bruto != Gesto.ABERTA:
                     self._ponteiro = self._mapear(mao_acao, t)
             else:
                 self._ponteiro = None
@@ -130,7 +132,7 @@ class Interpretador:
             t=t,
             trava=trava,
             gesto=gesto,
-            ponteiro=self._ponteiro if trava and gesto in _COM_PONTEIRO else None,
+            ponteiro=self._ponteiro if trava and gesto != Gesto.ABERTA else None,
             slide=slide,
             maos=len(maos),
         )

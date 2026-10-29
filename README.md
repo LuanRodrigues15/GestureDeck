@@ -18,6 +18,8 @@ A câmera acompanha as duas mãos em tempo real com o MediaPipe. O laser e os de
 | Slide seguinte | Mão direita aberta, deslizando para a esquerda |
 | Slide anterior | Mão direita aberta, deslizando para a direita |
 
+Com a trava ativa, um holofote pequeno acompanha a mão direita como o cursor de um mouse, mostrando onde o laser vai apontar e onde o traço vai começar. Ele ganha a cor da caneta quando você desenha e some quando a mão está aberta para deslizar.
+
 Enquanto a trava está ativa, uma barra na borda da tela permite escolher a cor, usar a borracha, desfazer e limpar o desenho, bastando manter o laser parado sobre o item por cerca de 1 segundo. Teclas: **F1** cartão de ajuda, **F2** laser ou holofote, **F9** pausar, **F10** sair.
 
 ## Tecnologias
