@@ -6,6 +6,7 @@
     "altura": 1080,
     "fps": 30,
     "formato": "MJPG",
+    "exposicao": null,
     "espelhar": true
   },
   "roi": [0.0, 0.0, 1.0, 1.0],
