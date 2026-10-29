@@ -9,7 +9,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 
-from gestures.eventos import Gesto, Quadro, Slide
+from gestures.eventos import Gesto, Modo, Quadro, Slide
 
 from .barra import montar_barra
 
@@ -48,6 +48,7 @@ class Instantaneo:
     versao: int
     segurando: tuple | None = None
     mensagem: tuple | None = None
+    modo: Modo = Modo.NENHUM
 
 
 class Sessao:
@@ -127,9 +128,11 @@ class Sessao:
                 texto = "Slide seguinte" if q.slide == Slide.PROXIMO else "Slide anterior"
                 self._aviso = (("ENSAIO: " if self.ensaio else "") + texto, agora)
 
+            # a barra so existe no modo desenho: fora dele nao e vista nem selecionavel
+            barra = q.trava and q.modo == Modo.DESENHO
             ponteiro_px = self._em_pixels(q.ponteiro)
-            sobre_item = self._item_sob(ponteiro_px) if q.trava else None
-            na_barra = q.trava and ponteiro_px is not None and self._na_barra(ponteiro_px)
+            sobre_item = self._item_sob(ponteiro_px) if barra else None
+            na_barra = barra and ponteiro_px is not None and self._na_barra(ponteiro_px)
 
             self._tratar_permanencia(q, sobre_item, agora)
             self._tratar_rastro(q, agora)
@@ -167,7 +170,7 @@ class Sessao:
         return x - folga <= px[0] <= x + w + folga and y - folga <= px[1] <= y + h + folga
 
     def _tratar_permanencia(self, q: Quadro, item, agora: float) -> None:
-        if not (q.trava and q.gesto == Gesto.LASER and item):
+        if not (q.trava and q.modo == Modo.DESENHO and q.gesto == Gesto.LASER and item):
             self._hover = None
             self._progresso = 0.0
             self._travado_ate_sair = False if item is None else self._travado_ate_sair
@@ -280,4 +283,5 @@ class Sessao:
                 versao=self._versao,
                 segurando=q.segurando if not self.pausado else None,
                 mensagem=self._mensagem,
+                modo=q.modo,
             )

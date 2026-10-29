@@ -6,7 +6,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
 import config as configuracao  # noqa: E402
-from gestures.eventos import Gesto, Quadro, Slide  # noqa: E402
+from gestures.eventos import Gesto, Modo, Quadro, Slide  # noqa: E402
 from overlay.sessao import Sessao  # noqa: E402
 
 
@@ -16,8 +16,10 @@ def nova_sessao():
     return s
 
 
-def q(t, gesto, ponteiro=None, trava=True, slide=None):
-    return Quadro(t=t, trava=trava, gesto=gesto, ponteiro=ponteiro, slide=slide, maos=2)
+def q(t, gesto, ponteiro=None, trava=True, slide=None, modo=Modo.DESENHO):
+    """Quadro no modo desenho (o unico com paleta), salvo se `modo` for outro."""
+    return Quadro(t=t, trava=trava, gesto=gesto, ponteiro=ponteiro, slide=slide, maos=2,
+                  modo=modo if trava else Modo.NENHUM)
 
 
 def desenhar(s, pontos, t0=0.0):
@@ -62,11 +64,11 @@ class TestTracos(unittest.TestCase):
 
 
 class TestBarra(unittest.TestCase):
-    def _permanecer(self, s, item, segundos, t0=0.0):
+    def _permanecer(self, s, item, segundos, t0=0.0, modo=Modo.DESENHO):
         alvo = (item.cx / 1920, item.cy / 1080)
         passos = int(segundos / 0.03)
         for i in range(passos + 1):
-            s.aplicar(q(t0 + i * 0.03, Gesto.LASER, alvo))
+            s.aplicar(q(t0 + i * 0.03, Gesto.LASER, alvo, modo=modo))
             # o tempo de permanencia usa o relogio real; simula a passagem dele
             s._hover_desde -= 0.03
 
@@ -75,6 +77,19 @@ class TestBarra(unittest.TestCase):
         self._permanecer(s, s._itens[2], 1.1)
         self.assertEqual(s.cor_indice, 2)
         self.assertEqual(s.ferramenta, "caneta")
+
+    def test_no_modo_slides_a_paleta_nao_seleciona_nada(self):
+        # a paleta so existe no modo desenho: laser parado onde ela estaria nao muda a cor
+        s = nova_sessao()
+        self._permanecer(s, s._itens[2], 1.1, modo=Modo.SLIDES)
+        self.assertEqual(s.cor_indice, 0)
+        self.assertIsNone(s.instantaneo().hover)
+        self.assertEqual(s.instantaneo().modo, Modo.SLIDES)
+
+    def test_o_instantaneo_informa_o_modo(self):
+        s = nova_sessao()
+        s.aplicar(q(0.0, Gesto.LASER, (0.5, 0.5)))
+        self.assertEqual(s.instantaneo().modo, Modo.DESENHO)
 
     def test_permanencia_curta_nao_seleciona(self):
         s = nova_sessao()
