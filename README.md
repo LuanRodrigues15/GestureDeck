@@ -109,7 +109,3 @@ Os slides usados para apresentar o projeto estão em [`apresentacao/GestureDeck_
 ## Licença
 
 Código sob a licença [MIT](LICENSE). Os ícones em `assets/icones/` seguem a licença própria descrita em `assets/icones/LICENCA.md`.
-
-## Integrantes
-
-Luan Rodrigues, João Henrique e Mateus Henrique
