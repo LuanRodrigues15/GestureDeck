@@ -4,7 +4,7 @@ Controle uma apresentação do PowerPoint com as mãos, usando só uma câmera c
 
 O apresentador fica de pé, longe do computador. A câmera acompanha as duas mãos em tempo real com o MediaPipe, e o programa desenha o laser e as anotações numa janela transparente sobre a tela, que também aparece para quem assiste remotamente (compartilhando a tela inteira). Não é preciso mouse, teclado nem passador de slides.
 
-![Demonstração do GestureDeck](assets/demo.gif)
+https://github.com/user-attachments/assets/1e8e0628-0b39-4910-a3ed-a1f73cab3b78
 
 ## Gestos
 
