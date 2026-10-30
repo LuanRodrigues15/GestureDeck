@@ -80,6 +80,12 @@ Ao sair com F10, um relatório em JSON (slides trocados, traços, gestos reconhe
 3. Se o polegar trocar o sentido do slide, ajuste `slide.polegar_dobrado_max` e `slide.polegar_esticado_min`.
 4. Se a câmera não abrir, feche navegador e Discord (ela atende um programa por vez) ou use `--camera N`. Em sala escura o FPS cai: acenda a luz ou defina `camera.exposicao` (por exemplo `-5`).
 
+### Problemas na instalação
+
+- **O `pip` fica parado em "Preparing metadata" ou baixa um arquivo `.tar.gz`:** não existe pacote pronto para o seu Python e o `pip` está compilando, o que pode levar horas. Cancele com Ctrl+C, apague a pasta `.venv` e recrie com uma versão suportada. O comando `py -0` lista as versões instaladas, e o 3.10 pode ser baixado em python.org ou instalado com `winget install Python.Python.3.10`. Depois, use `py -3.10 -m venv .venv` e repita a instalação.
+- **`No module named 'PySide6'` (ou outro módulo):** a instalação não terminou ou rodou fora do ambiente. Use sempre `.venv\Scripts\python -m pip ...`, nunca `pip` solto.
+- **`No suitable Python runtime found`:** a versão pedida em `py -3.X` não está instalada. Confira com `py -0`.
+
 ### Testes
 
 ```bash
