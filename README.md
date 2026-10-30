@@ -106,6 +106,10 @@ Os slides usados para apresentar o projeto estão em [`apresentacao/GestureDeck_
 - [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (Google): detecção das mãos.
 - [Twemoji](https://github.com/jdecked/twemoji) (CC-BY 4.0): ícones de mão em `assets/icones/`, detalhes em `assets/icones/LICENCA.md`. O ícone do slide anterior foi feito pelo grupo.
 
+## Licença
+
+Código sob a licença [MIT](LICENSE). Os ícones em `assets/icones/` seguem a licença própria descrita em `assets/icones/LICENCA.md`.
+
 ## Integrantes
 
 Luan Rodrigues, João Henrique e Mateus Henrique
