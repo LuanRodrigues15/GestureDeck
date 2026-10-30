@@ -47,19 +47,18 @@ flowchart TD
 
 ## Como executar
 
-Requisitos: Windows, Python 3.10, câmera USB fixa e PowerPoint. Clone em uma pasta curta (por exemplo `C:\dev\GestureDeck`), porque caminhos longos quebram o Git no Windows.
+Requisitos: Windows, Python 3.10 ou mais novo (testado no 3.10 e no 3.14), câmera USB fixa e PowerPoint. Clone em uma pasta curta (por exemplo `C:\dev\GestureDeck`), porque caminhos longos quebram o Git no Windows.
 
 ```bash
 git clone https://github.com/LuanRodrigues15/GestureDeck.git
 cd GestureDeck
-py -3.10 -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-python scripts/baixar_modelo.py
-python main.py
+py -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python scripts/baixar_modelo.py
+.venv\Scripts\python main.py
 ```
 
-Abra a apresentação no PowerPoint e inicie com F5. A seta é enviada para a janela da apresentação, que vem para a frente se outra janela estiver em foco. Só uma cópia roda por vez, porque duas disputam a câmera. Para fechar, use F10, o ícone da bandeja (botão direito, "Sair") ou `python main.py --encerrar`.
+Abra a apresentação no PowerPoint e inicie com F5. A seta é enviada para a janela da apresentação, que vem para a frente se outra janela estiver em foco. Só uma cópia roda por vez, porque duas disputam a câmera. Para fechar, use F10, o ícone da bandeja (botão direito, "Sair") ou `.venv\Scripts\python main.py --encerrar`.
 
 | Opção | O que faz |
 |---|---|
@@ -76,7 +75,7 @@ Ao sair com F10, um relatório em JSON (slides trocados, traços, gestos reconhe
 
 ### Ajuste na primeira vez
 
-1. Rode `python main.py --ensaio --previa` no lugar onde vai apresentar. O retângulo verde é a zona ativa; ajuste `mapeamento.zona_ativa` para a área em que a mão direita se move com conforto.
+1. Rode `.venv\Scripts\python main.py --ensaio --previa` no lugar onde vai apresentar. O retângulo verde é a zona ativa; ajuste `mapeamento.zona_ativa` para a área em que a mão direita se move com conforto.
 2. Se nenhum modo ativar, confira `gestos.trava_altura_max` (quanto maior, mais baixo a mão esquerda pode ficar). A mão aberta exige os quatro dedos esticados; se falhar, ajuste `gestos.dedo_esticado_limiar`.
 3. Se o polegar trocar o sentido do slide, ajuste `slide.polegar_dobrado_max` e `slide.polegar_esticado_min`.
 4. Se a câmera não abrir, feche navegador e Discord (ela atende um programa por vez) ou use `--camera N`. Em sala escura o FPS cai: acenda a luz ou defina `camera.exposicao` (por exemplo `-5`).
@@ -84,7 +83,7 @@ Ao sair com F10, um relatório em JSON (slides trocados, traços, gestos reconhe
 ### Testes
 
 ```bash
-python -m unittest discover -s tests
+.venv\Scripts\python -m unittest discover -s tests
 ```
 
 Os testes usam mãos sintéticas, sem câmera, e cobrem os modos, o laser, a pinça, a troca de slide, a paleta e o desenho.
