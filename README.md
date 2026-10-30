@@ -92,7 +92,14 @@ Os testes usam mãos sintéticas, sem câmera, e cobrem os modos, o laser, a pin
 
 ## Tecnologias
 
-Python 3.10, OpenCV, MediaPipe (HandLandmarker), PySide6 (janela transparente), PyAutoGUI (teclas de seta) e NumPy, com as versões fixadas no `requirements.txt`.
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge&logo=mediapipe&logoColor=white)
+![PySide6](https://img.shields.io/badge/PySide6-41CD52?style=for-the-badge&logo=qt&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![PyAutoGUI](https://img.shields.io/badge/PyAutoGUI-444444?style=for-the-badge)
+
+OpenCV captura a câmera, o MediaPipe (HandLandmarker) acha os 21 pontos de cada mão, o PySide6 desenha a janela transparente, o PyAutoGUI envia as setas ao PowerPoint e o NumPy cuida dos cálculos. As versões estão no `requirements.txt`.
 
 ## Apresentação
 
