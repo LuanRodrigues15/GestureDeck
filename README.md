@@ -93,6 +93,10 @@ Os testes usam mãos sintéticas, sem câmera, e cobrem os modos, o laser, a pin
 
 Python 3.10, OpenCV, MediaPipe (HandLandmarker), PySide6 (janela transparente), PyAutoGUI (teclas de seta) e NumPy, com as versões fixadas no `requirements.txt`.
 
+## Apresentação
+
+Os slides usados para apresentar o projeto estão em [`apresentacao/GestureDeck_apresentacao.pptx`](apresentacao/GestureDeck_apresentacao.pptx). Eles foram pensados para serem passados com o próprio GestureDeck.
+
 ## Referências e créditos
 
 - [kazuhito00/hand-gesture-recognition-using-mediapipe](https://github.com/kazuhito00/hand-gesture-recognition-using-mediapipe) (Apache-2.0): uso dos 21 pontos e normalização pelo pulso.
